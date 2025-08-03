@@ -1,7 +1,5 @@
 const sgMail = require('@sendgrid/mail');
-const { PrismaClient } = require('@prisma/client');
-
-const prisma = new PrismaClient();
+const prisma = require('../models');
 
 // Configure SendGrid
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);

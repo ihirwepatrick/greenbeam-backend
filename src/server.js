@@ -6,7 +6,7 @@ const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
 require('dotenv').config();
 
-const { PrismaClient } = require('@prisma/client');
+const prisma = require('./models');
 const enquiryRoutes = require('./routes/enquiries');
 const productRoutes = require('./routes/products');
 const notificationRoutes = require('./routes/notifications');
@@ -15,7 +15,6 @@ const dashboardRoutes = require('./routes/dashboard');
 const authRoutes = require('./routes/auth');
 
 const app = express();
-const prisma = new PrismaClient();
 
 // Middleware
 app.use(helmet());
