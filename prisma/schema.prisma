@@ -1,0 +1,145 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Enquiry {
+  id           String   @id @default(cuid())
+  customerName String   @map("customer_name")
+  email        String
+  phone        String?
+  product      String
+  subject      String
+  message      String
+  status       EnquiryStatus @default(NEW)
+  priority     Priority @default(MEDIUM)
+  source       String   @default("Website Form")
+  location     String?
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+  
+  // Relations
+  responses    EnquiryResponse[]
+  
+  @@map("enquiries")
+}
+
+model EnquiryResponse {
+  id        String   @id @default(cuid())
+  enquiryId String   @map("enquiry_id")
+  message   String
+  sentBy    String   @map("sent_by")
+  emailSent Boolean  @default(false) @map("email_sent")
+  sentAt    DateTime @default(now()) @map("sent_at")
+  
+  // Relations
+  enquiry   Enquiry  @relation(fields: [enquiryId], references: [id], onDelete: Cascade)
+  
+  @@map("enquiry_responses")
+}
+
+model Product {
+  id              Int      @id @default(autoincrement())
+  name            String
+  category        String
+  description     String?
+  image           String?
+  features        Json?
+  specifications  Json?
+  rating          Decimal  @default(0) @db.Decimal(3, 2)
+  reviews         Int      @default(0)
+  status          ProductStatus @default(AVAILABLE)
+  images          Json?
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  
+  @@map("products")
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  type      NotificationType
+  title     String
+  message   String
+  priority  NotificationPriority @default(MEDIUM)
+  read      Boolean  @default(false)
+  data      Json?
+  createdAt DateTime @default(now()) @map("created_at")
+  readAt    DateTime? @map("read_at")
+  
+  @@map("notifications")
+}
+
+model EmailLog {
+  id        String   @id @default(cuid())
+  toEmail   String   @map("to_email")
+  subject   String
+  body      String
+  type      String
+  status    EmailStatus @default(PENDING)
+  sentAt    DateTime? @map("sent_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  
+  @@map("email_logs")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      UserRole @default(ADMIN)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  
+  @@map("users")
+}
+
+// Enums
+enum EnquiryStatus {
+  NEW
+  IN_PROGRESS
+  RESPONDED
+  CLOSED
+}
+
+enum Priority {
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum ProductStatus {
+  AVAILABLE
+  NOT_AVAILABLE
+}
+
+enum NotificationType {
+  ENQUIRY
+  SYSTEM
+  ALERT
+}
+
+enum NotificationPriority {
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum EmailStatus {
+  SENT
+  FAILED
+  PENDING
+}
+
+enum UserRole {
+  ADMIN
+  USER
+} 
