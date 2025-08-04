@@ -18,4 +18,40 @@ module.exports.$queryRaw = prisma.$queryRaw;
 module.exports.$executeRaw = prisma.$executeRaw;
 
 // Export Prisma utilities
-module.exports.Prisma = require('@prisma/client').Prisma; 
+module.exports.Prisma = require('@prisma/client').Prisma;
+
+// Export new model classes
+module.exports.ResponseModel = require('./ResponseModel');
+module.exports.DTOModel = require('./DTOModel');
+module.exports.ServiceModel = require('./ServiceModel');
+module.exports.ValidationModel = require('./ValidationModel');
+
+// Export individual DTOs for convenience
+const { 
+  EnquiryDTO, 
+  EnquiryResponseDTO, 
+  ProductDTO, 
+  UserDTO, 
+  NotificationDTO, 
+  EmailLogDTO 
+} = require('./DTOModel');
+
+module.exports.EnquiryDTO = EnquiryDTO;
+module.exports.EnquiryResponseDTO = EnquiryResponseDTO;
+module.exports.ProductDTO = ProductDTO;
+module.exports.UserDTO = UserDTO;
+module.exports.NotificationDTO = NotificationDTO;
+module.exports.EmailLogDTO = EmailLogDTO;
+
+// Export individual services for convenience
+const { 
+  EnquiryService, 
+  ProductService, 
+  NotificationService, 
+  DashboardService 
+} = require('./ServiceModel');
+
+module.exports.EnquiryService = EnquiryService;
+module.exports.ProductService = ProductService;
+module.exports.NotificationService = NotificationService;
+module.exports.DashboardService = DashboardService; 

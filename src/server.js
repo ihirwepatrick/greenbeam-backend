@@ -1,169 +1,168 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const compression = require('compression');
-const morgan = require('morgan');
-const rateLimit = require('express-rate-limit');
-require('dotenv').config();
+const path = require('path');
+const { createClient } = require('@supabase/supabase-js');
 
-const prisma = require('./models');
+// Initialize Supabase client
+const supabaseUrl = process.env.SUPABASE_URL || 'https://putkiapvvlebelkafwbe.supabase.co';
+const supabaseKey = process.env.SUPABASE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB1dGtpYXB2dmxlYmVsa2Fmd2JlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQ5OTI5MjQsImV4cCI6MjA2MDU2ODkyNH0.0lkWoaKuYpatk8yyGnFonBOK8qRa-nvspnBYQa0A2dQ';
+const supabase = createClient(supabaseUrl, supabaseKey);
+
+// Import routes
 const enquiryRoutes = require('./routes/enquiries');
 const productRoutes = require('./routes/products');
-const notificationRoutes = require('./routes/notifications');
-const emailRoutes = require('./routes/email');
-const dashboardRoutes = require('./routes/dashboard');
 const authRoutes = require('./routes/auth');
+const dashboardRoutes = require('./routes/dashboard');
+
+// Import database
+const prisma = require('./models');
 
 const app = express();
 
-// Middleware
-app.use(helmet());
-app.use(compression());
-app.use(morgan('combined'));
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+// Initialize Supabase bucket check
+async function checkSupabaseBucket() {
+  try {
+    const bucketName = process.env.SUPABASE_BUCKET_NAME || 'greenbeam';
+    console.log(`Checking Supabase bucket: '${bucketName}'`);
+    
+    // Check if bucket exists
+    const { data: buckets, error } = await supabase.storage.listBuckets();
+    
+    if (error) {
+      console.error('Error checking Supabase buckets:', error.message);
+      return;
+    }
+    
+    const bucketExists = buckets.some(bucket => bucket.name === bucketName);
+    
+    if (bucketExists) {
+      console.log(`✅ Supabase bucket '${bucketName}' found and ready for use.`);
+    } else {
+      console.warn(`⚠️ Warning: Bucket '${bucketName}' not found. Please create it manually in the Supabase dashboard.`);
+    }
+  } catch (error) {
+    console.error('Error checking Supabase storage:', error.message);
+  }
+}
 
-// CORS configuration
-app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+// Check Supabase bucket on startup
+checkSupabaseBucket();
+
+// Basic middleware
+app.use(helmet({
+    contentSecurityPolicy: false // For development only
 }));
 
-// Rate limiting
-const limiter = rateLimit({
-  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000, // 15 minutes
-  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100, // limit each IP to 100 requests per windowMs
-  message: {
-    success: false,
-    error: {
-      code: 'RATE_LIMIT_EXCEEDED',
-      message: 'Too many requests from this IP, please try again later.'
-    }
-  }
-});
+// Apply CORS before any route definitions
+app.use(cors({
+  origin: ['http://localhost:5173', 'http://127.0.0.1:5173', 'http://localhost:3001', 
+           'http://127.0.0.1:3001', 'http://192.168.56.1:3001', 
+           'http://localhost:3000', 'http://127.0.0.1:3000'],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Origin', 'X-Requested-With', 'Accept', 'Access-Control-Allow-Headers']
+}));
 
-app.use('/api/', limiter);
+// Add a preflight handler for all routes
+app.options('*', cors());
+
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(compression());
+
+// Serve static files from public directory
+app.use(express.static(path.join(__dirname, 'public')));
+
+// Export Supabase client for use in other files
+app.locals.supabase = supabase;
 
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.json({
-    success: true,
-    message: 'Greenbeam API is running',
+    status: 'OK',
     timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV
+    environment: process.env.NODE_ENV || 'development'
   });
 });
 
 // API Routes
 app.use('/api/v1/enquiries', enquiryRoutes);
 app.use('/api/v1/products', productRoutes);
-app.use('/api/v1/notifications', notificationRoutes);
-app.use('/api/v1/email', emailRoutes);
-app.use('/api/v1/dashboard', dashboardRoutes);
 app.use('/api/v1/auth', authRoutes);
+app.use('/api/v1/dashboard', dashboardRoutes);
 
-// 404 handler
-app.use('*', (req, res) => {
-  res.status(404).json({
-    success: false,
-    error: {
-      code: 'NOT_FOUND',
-      message: `Route ${req.originalUrl} not found`
-    }
-  });
-});
+// Error Handling Middleware
+const notFoundHandler = (req, res) => {
+    res.status(404).json({
+        status: 'error',
+        message: `Route not found - ${req.originalUrl}`
+    });
+};
+
+app.use(notFoundHandler);
 
 // Global error handler
-app.use((err, req, res, next) => {
-  console.error('Error:', err);
-
-  // Prisma errors
-  if (err.code === 'P2002') {
-    return res.status(400).json({
-      success: false,
-      error: {
-        code: 'DUPLICATE_ENTRY',
-        message: 'A record with this information already exists'
-      }
-    });
-  }
-
-  if (err.code === 'P2025') {
-    return res.status(404).json({
-      success: false,
-      error: {
-        code: 'RECORD_NOT_FOUND',
-        message: 'The requested record was not found'
-      }
-    });
-  }
-
-  // JWT errors
-  if (err.name === 'JsonWebTokenError') {
-    return res.status(401).json({
-      success: false,
-      error: {
-        code: 'INVALID_TOKEN',
-        message: 'Invalid authentication token'
-      }
-    });
-  }
-
-  if (err.name === 'TokenExpiredError') {
-    return res.status(401).json({
-      success: false,
-      error: {
-        code: 'TOKEN_EXPIRED',
-        message: 'Authentication token has expired'
-      }
-    });
-  }
-
-  // Validation errors
-  if (err.name === 'ValidationError') {
-    return res.status(400).json({
-      success: false,
-      error: {
-        code: 'VALIDATION_ERROR',
-        message: err.message,
-        details: err.details
-      }
-    });
-  }
-
-  // Default error
-  res.status(err.status || 500).json({
+app.use((error, req, res, next) => {
+  console.error('Global error handler:', error);
+  res.status(500).json({
     success: false,
     error: {
       code: 'INTERNAL_SERVER_ERROR',
-      message: process.env.NODE_ENV === 'production' 
-        ? 'An internal server error occurred' 
-        : err.message
+      message: error.message || 'An unexpected error occurred',
+      timestamp: new Date().toISOString()
     }
   });
 });
 
-// Graceful shutdown
-process.on('SIGINT', async () => {
-  console.log('Received SIGINT. Closing HTTP server and database connection...');
-  await prisma.$disconnect();
-  process.exit(0);
-});
-
-process.on('SIGTERM', async () => {
-  console.log('Received SIGTERM. Closing HTTP server and database connection...');
-  await prisma.$disconnect();
-  process.exit(0);
-});
-
+// Server setup with port handling
 const PORT = process.env.PORT || 3000;
 
-app.listen(PORT, () => {
-  console.log(`🚀 Greenbeam API server running on port ${PORT}`);
-  console.log(`📊 Environment: ${process.env.NODE_ENV}`);
-  console.log(`🔗 Health check: http://localhost:${PORT}/health`);
-});
+const startServer = async () => {
+    try {
+        // Check if port is in use
+        const server = app.listen(PORT, () => {
+            console.log(`🚀 Greenbeam API server running on port ${PORT}`);
+            console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
+            console.log(`🔗 Health check: http://localhost:${PORT}/health`);
+        });
+
+        server.on('error', (error) => {
+            if (error.code === 'EADDRINUSE') {
+                console.log(`Port ${PORT} is busy, trying ${PORT + 1}`);
+                server.close();
+                app.listen(PORT + 1);
+            } else {
+                console.error('Server error:', error);
+            }
+        });
+
+        // Handle graceful shutdown
+        process.on('SIGTERM', () => {
+            console.log('SIGTERM received. Shutting down gracefully...');
+            server.close(() => {
+                console.log('Server closed');
+                process.exit(0);
+            });
+        });
+
+        process.on('SIGINT', () => {
+            console.log('SIGINT received. Closing HTTP server and database connection...');
+            server.close(async () => {
+                await prisma.$disconnect();
+                console.log('Server closed');
+                process.exit(0);
+            });
+        });
+
+    } catch (error) {
+        console.error('Failed to start server:', error);
+        process.exit(1);
+    }
+};
+
+startServer();
 
 module.exports = app; 

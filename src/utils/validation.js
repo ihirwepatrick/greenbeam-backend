@@ -10,11 +10,11 @@ const createEnquirySchema = Joi.object({
   message: Joi.string().min(10).max(2000).required(),
   source: Joi.string().max(100).default('Website Form'),
   location: Joi.string().max(255).optional(),
-  priority: Joi.string().valid('High', 'Medium', 'Low').default('Medium')
+  priority: Joi.string().valid('HIGH', 'MEDIUM', 'LOW').default('MEDIUM')
 });
 
 const updateEnquiryStatusSchema = Joi.object({
-  status: Joi.string().valid('New', 'In Progress', 'Responded', 'Closed').required()
+  status: Joi.string().valid('NEW', 'IN_PROGRESS', 'RESPONDED', 'CLOSED').required()
 });
 
 const respondToEnquirySchema = Joi.object({
@@ -27,22 +27,70 @@ const createProductSchema = Joi.object({
   name: Joi.string().min(2).max(255).required(),
   category: Joi.string().min(2).max(100).required(),
   description: Joi.string().max(2000).optional(),
-  image: Joi.string().uri().optional(),
-  features: Joi.array().items(Joi.string()).optional(),
-  specifications: Joi.object().optional(),
-  status: Joi.string().valid('Available', 'Not Available').default('Available'),
-  images: Joi.array().items(Joi.string().uri()).optional()
+  features: Joi.alternatives().try(
+    Joi.array().items(Joi.string()),
+    Joi.string().custom((value, helpers) => {
+      try {
+        const parsed = JSON.parse(value);
+        if (Array.isArray(parsed)) {
+          return parsed;
+        }
+        return helpers.error('any.invalid');
+      } catch (error) {
+        return helpers.error('any.invalid');
+      }
+    }, 'json-array')
+  ).optional(),
+  specifications: Joi.alternatives().try(
+    Joi.object(),
+    Joi.string().custom((value, helpers) => {
+      try {
+        const parsed = JSON.parse(value);
+        if (typeof parsed === 'object' && parsed !== null) {
+          return parsed;
+        }
+        return helpers.error('any.invalid');
+      } catch (error) {
+        return helpers.error('any.invalid');
+      }
+    }, 'json-object')
+  ).optional(),
+  status: Joi.string().valid('AVAILABLE', 'NOT_AVAILABLE').default('AVAILABLE')
 });
 
 const updateProductSchema = Joi.object({
   name: Joi.string().min(2).max(255).optional(),
   category: Joi.string().min(2).max(100).optional(),
   description: Joi.string().max(2000).optional(),
-  image: Joi.string().uri().optional(),
-  features: Joi.array().items(Joi.string()).optional(),
-  specifications: Joi.object().optional(),
-  status: Joi.string().valid('Available', 'Not Available').optional(),
-  images: Joi.array().items(Joi.string().uri()).optional()
+  features: Joi.alternatives().try(
+    Joi.array().items(Joi.string()),
+    Joi.string().custom((value, helpers) => {
+      try {
+        const parsed = JSON.parse(value);
+        if (Array.isArray(parsed)) {
+          return parsed;
+        }
+        return helpers.error('any.invalid');
+      } catch (error) {
+        return helpers.error('any.invalid');
+      }
+    }, 'json-array')
+  ).optional(),
+  specifications: Joi.alternatives().try(
+    Joi.object(),
+    Joi.string().custom((value, helpers) => {
+      try {
+        const parsed = JSON.parse(value);
+        if (typeof parsed === 'object' && parsed !== null) {
+          return parsed;
+        }
+        return helpers.error('any.invalid');
+      } catch (error) {
+        return helpers.error('any.invalid');
+      }
+    }, 'json-object')
+  ).optional(),
+  status: Joi.string().valid('AVAILABLE', 'NOT_AVAILABLE').optional()
 });
 
 // Email validation schema
@@ -78,18 +126,18 @@ const paginationSchema = Joi.object({
 });
 
 const enquiryQuerySchema = paginationSchema.keys({
-  status: Joi.string().valid('New', 'In Progress', 'Responded', 'Closed').optional(),
-  priority: Joi.string().valid('High', 'Medium', 'Low').optional()
+  status: Joi.string().valid('NEW', 'IN_PROGRESS', 'RESPONDED', 'CLOSED').optional(),
+  priority: Joi.string().valid('HIGH', 'MEDIUM', 'LOW').optional()
 });
 
 const productQuerySchema = paginationSchema.keys({
   category: Joi.string().max(100).optional(),
-  status: Joi.string().valid('Available', 'Not Available').optional()
+  status: Joi.string().valid('AVAILABLE', 'NOT_AVAILABLE').optional()
 });
 
 const notificationQuerySchema = paginationSchema.keys({
   read: Joi.boolean().optional(),
-  type: Joi.string().valid('enquiry', 'system', 'alert').optional()
+  type: Joi.string().valid('ENQUIRY', 'SYSTEM', 'ALERT').optional()
 });
 
 // Validation middleware
@@ -102,7 +150,12 @@ const validate = (schema) => {
         error: {
           code: 'VALIDATION_ERROR',
           message: error.details[0].message,
-          details: error.details
+          details: error.details.map(detail => ({
+            message: detail.message,
+            path: detail.path,
+            type: detail.type,
+            context: detail.context
+          }))
         }
       });
     }
@@ -120,7 +173,12 @@ const validateQuery = (schema) => {
         error: {
           code: 'VALIDATION_ERROR',
           message: error.details[0].message,
-          details: error.details
+          details: error.details.map(detail => ({
+            message: detail.message,
+            path: detail.path,
+            type: detail.type,
+            context: detail.context
+          }))
         }
       });
     }

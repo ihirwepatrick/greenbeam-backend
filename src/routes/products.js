@@ -7,9 +7,50 @@ const {
   validateQuery 
 } = require('../utils/validation');
 const { authenticateToken, requireAdmin, optionalAuth } = require('../utils/auth');
+const uploadMiddleware = require('../middleware/uploadMiddleware');
 const ProductController = require('../controllers/productController');
 
 const router = express.Router();
+
+// Test Supabase storage access
+router.get('/test-storage', async (req, res) => {
+  try {
+    const supabase = req.app.locals.supabase;
+    const bucketName = process.env.SUPABASE_BUCKET_NAME || 'greenbeam';
+    
+    const { data: buckets, error } = await supabase.storage.listBuckets();
+    
+    if (error) {
+      return res.json({
+        success: false,
+        data: { success: false, error: error.message },
+        message: 'Storage access test failed'
+      });
+    }
+    
+    const bucketExists = buckets.some(bucket => bucket.name === bucketName);
+    
+    res.json({
+      success: true,
+      data: { 
+        success: true, 
+        accessible: true,
+        bucketExists: bucketExists,
+        bucketName: bucketName
+      },
+      message: 'Storage access test completed'
+    });
+  } catch (error) {
+    console.error('Storage test error:', error);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 'STORAGE_TEST_ERROR',
+        message: error.message
+      }
+    });
+  }
+});
 
 // Get all products (public endpoint with optional auth)
 router.get('/', optionalAuth, validateQuery(productQuerySchema), async (req, res) => {
@@ -54,10 +95,71 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// Create new product (admin only)
-router.post('/', authenticateToken, requireAdmin, validate(createProductSchema), async (req, res) => {
+// Create new product with images (admin only)
+router.post('/', authenticateToken, requireAdmin, uploadMiddleware.fields([
+  { name: 'image', maxCount: 1 },
+  { name: 'images', maxCount: 9 }
+]), async (req, res) => {
   try {
-    const result = await ProductController.createProduct(req.validatedData);
+    // Validate product data
+    const { error, value } = createProductSchema.validate(req.body);
+    if (error) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: error.details[0].message,
+          details: error.details.map(detail => ({
+            message: detail.message,
+            path: detail.path,
+            type: detail.type,
+            context: detail.context
+          }))
+        },
+        statusCode: 400
+      });
+    }
+
+    // Prepare files object
+    const files = {};
+    if (req.files) {
+      console.log('[ROUTE] Received files:', {
+        fields: Object.keys(req.files),
+        imageCount: req.files.image ? req.files.image.length : 0,
+        imagesCount: req.files.images ? req.files.images.length : 0
+      });
+      
+      // Handle main image
+      if (req.files.image && req.files.image.length > 0) {
+        files.image = req.files.image[0];
+        console.log('[ROUTE] Main image file:', {
+          originalname: files.image.originalname,
+          hasSupabaseUrl: !!files.image.supabaseUrl,
+          supabaseUrl: files.image.supabaseUrl
+        });
+      }
+      
+      // Handle additional images
+      if (req.files.images && req.files.images.length > 0) {
+        files.images = req.files.images;
+        console.log('[ROUTE] Additional images:', files.images.map((file, index) => ({
+          index,
+          originalname: file.originalname,
+          hasSupabaseUrl: !!file.supabaseUrl,
+          supabaseUrl: file.supabaseUrl
+        })));
+      }
+    } else {
+      console.log('[ROUTE] No files received');
+    }
+
+    console.log('[ROUTE] Prepared files object:', {
+      hasImage: !!files.image,
+      hasImages: !!files.images,
+      imagesCount: files.images ? files.images.length : 0
+    });
+
+    const result = await ProductController.createProduct(value, files);
     res.status(201).json(result);
   } catch (error) {
     console.error('Error creating product:', error);
@@ -71,10 +173,71 @@ router.post('/', authenticateToken, requireAdmin, validate(createProductSchema),
   }
 });
 
-// Update product (admin only)
-router.put('/:id', authenticateToken, requireAdmin, validate(updateProductSchema), async (req, res) => {
+// Update product with images (admin only)
+router.put('/:id', authenticateToken, requireAdmin, uploadMiddleware.fields([
+  { name: 'image', maxCount: 1 },
+  { name: 'images', maxCount: 9 }
+]), async (req, res) => {
   try {
-    const result = await ProductController.updateProduct(req.params.id, req.validatedData);
+    // Validate product data
+    const { error, value } = updateProductSchema.validate(req.body);
+    if (error) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: error.details[0].message,
+          details: error.details.map(detail => ({
+            message: detail.message,
+            path: detail.path,
+            type: detail.type,
+            context: detail.context
+          }))
+        },
+        statusCode: 400
+      });
+    }
+
+    // Prepare files object
+    const files = {};
+    if (req.files) {
+      console.log('[ROUTE] Received files:', {
+        fields: Object.keys(req.files),
+        imageCount: req.files.image ? req.files.image.length : 0,
+        imagesCount: req.files.images ? req.files.images.length : 0
+      });
+      
+      // Handle main image
+      if (req.files.image && req.files.image.length > 0) {
+        files.image = req.files.image[0];
+        console.log('[ROUTE] Main image file:', {
+          originalname: files.image.originalname,
+          hasSupabaseUrl: !!files.image.supabaseUrl,
+          supabaseUrl: files.image.supabaseUrl
+        });
+      }
+      
+      // Handle additional images
+      if (req.files.images && req.files.images.length > 0) {
+        files.images = req.files.images;
+        console.log('[ROUTE] Additional images:', files.images.map((file, index) => ({
+          index,
+          originalname: file.originalname,
+          hasSupabaseUrl: !!file.supabaseUrl,
+          supabaseUrl: file.supabaseUrl
+        })));
+      }
+    } else {
+      console.log('[ROUTE] No files received');
+    }
+
+    console.log('[ROUTE] Prepared files object:', {
+      hasImage: !!files.image,
+      hasImages: !!files.images,
+      imagesCount: files.images ? files.images.length : 0
+    });
+
+    const result = await ProductController.updateProduct(req.params.id, value, files);
     res.json(result);
   } catch (error) {
     console.error('Error updating product:', error);
@@ -124,12 +287,12 @@ router.delete('/:id', authenticateToken, requireAdmin, async (req, res) => {
 });
 
 // Get product categories (public endpoint)
-router.get('/categories/list', async (req, res) => {
+router.get('/categories/all', async (req, res) => {
   try {
     const result = await ProductController.getProductCategories();
     res.json(result);
   } catch (error) {
-    console.error('Error fetching categories:', error);
+    console.error('Error fetching product categories:', error);
     res.status(500).json({
       success: false,
       error: {
@@ -144,6 +307,17 @@ router.get('/categories/list', async (req, res) => {
 router.post('/:id/rate', optionalAuth, async (req, res) => {
   try {
     const { rating } = req.body;
+    
+    if (!rating || rating < 1 || rating > 5) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'Rating must be between 1 and 5'
+        }
+      });
+    }
+
     const result = await ProductController.updateProductRating(req.params.id, rating);
     res.json(result);
   } catch (error) {
@@ -153,15 +327,6 @@ router.post('/:id/rate', optionalAuth, async (req, res) => {
         success: false,
         error: {
           code: 'PRODUCT_NOT_FOUND',
-          message: error.message
-        }
-      });
-    }
-    if (error.message === 'Rating must be between 1 and 5') {
-      return res.status(400).json({
-        success: false,
-        error: {
-          code: 'INVALID_RATING',
           message: error.message
         }
       });
