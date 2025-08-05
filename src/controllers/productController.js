@@ -197,28 +197,100 @@ class ProductController {
         throw new Error('Product not found');
       }
 
+      console.log('[PRODUCT] Existing product images:', {
+        mainImage: existingProduct.image,
+        additionalImages: existingProduct.images,
+        additionalImagesCount: existingProduct.images ? existingProduct.images.length : 0
+      });
+
       let imageUrl = existingProduct.image;
       let imageUrls = existingProduct.images || [];
+
+      console.log('[PRODUCT] Updating product with files:', {
+        hasImage: !!files.image,
+        hasImages: !!files.images,
+        imagesCount: files.images ? files.images.length : 0,
+        existingImagesCount: imageUrls.length
+      });
 
       // Handle main image upload
       if (files.image && files.image.supabaseUrl) {
         imageUrl = files.image.supabaseUrl;
+        console.log('[PRODUCT] Main image updated:', imageUrl);
+      } else if (files.image) {
+        console.log('[PRODUCT] Main image file exists but no supabaseUrl:', files.image);
       }
 
-      // Handle additional images upload
+      // Handle additional images upload - REPLACE existing images
       if (files.images && files.images.length > 0) {
-        const newImageUrls = files.images.map(file => file.supabaseUrl).filter(url => url);
-        imageUrls = [...imageUrls, ...newImageUrls];
+        console.log('[PRODUCT] Processing additional images for update:', files.images.length);
+        
+        const newImageUrls = [];
+        for (let i = 0; i < files.images.length; i++) {
+          const file = files.images[i];
+          console.log(`[PRODUCT] Image ${i + 1}:`, {
+            originalname: file.originalname,
+            hasSupabaseUrl: !!file.supabaseUrl,
+            supabaseUrl: file.supabaseUrl
+          });
+          
+          if (file.supabaseUrl) {
+            newImageUrls.push(file.supabaseUrl);
+          } else {
+            console.warn(`[PRODUCT] Image ${i + 1} missing supabaseUrl:`, file);
+          }
+        }
+        
+        // Replace existing images with new ones
+        imageUrls = newImageUrls;
+        console.log('[PRODUCT] Additional images replaced:', imageUrls);
+      } else {
+        console.log('[PRODUCT] No new additional images provided, keeping existing:', imageUrls);
       }
+
+      console.log('[PRODUCT] Final image URLs for update:', {
+        mainImage: imageUrl,
+        additionalImages: imageUrls,
+        totalImages: imageUrls.length
+      });
+
+      // Check if productData contains images field
+      console.log('[PRODUCT] Product data from request:', {
+        hasImagesField: 'images' in productData,
+        imagesFieldValue: productData.images,
+        allFields: Object.keys(productData)
+      });
+
+      // Prepare update data - explicitly exclude images from productData to avoid conflicts
+      const { images: _, ...productDataWithoutImages } = productData;
+      const updateData = {
+        ...productDataWithoutImages,
+        image: imageUrl,
+        images: imageUrls // Always pass the array, even if empty
+      };
+
+      console.log('[PRODUCT] Database update data:', {
+        image: updateData.image,
+        images: updateData.images,
+        imagesType: typeof updateData.images,
+        imagesIsArray: Array.isArray(updateData.images),
+        imagesLength: updateData.images ? updateData.images.length : 0,
+        imagesJSON: JSON.stringify(updateData.images)
+      });
 
       // Update product in database
       const product = await prisma.product.update({
         where: { id: parseInt(id) },
-        data: {
-          ...productData,
-          image: imageUrl,
-          images: imageUrls.length > 0 ? imageUrls : null
-        }
+        data: updateData
+      });
+
+      console.log('[PRODUCT] Product updated successfully with ID:', product.id);
+      console.log('[PRODUCT] Updated product images from database:', {
+        mainImage: product.image,
+        additionalImages: product.images,
+        additionalImagesCount: product.images ? product.images.length : 0,
+        additionalImagesType: typeof product.images,
+        additionalImagesIsArray: Array.isArray(product.images)
       });
 
       return {
@@ -240,6 +312,7 @@ class ProductController {
         }
       };
     } catch (error) {
+      console.error('[PRODUCT] Error updating product:', error);
       throw new Error(`Failed to update product: ${error.message}`);
     }
   }
