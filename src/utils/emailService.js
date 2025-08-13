@@ -4,12 +4,28 @@ const prisma = require('../models');
 // Configure SendGrid
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
+// Email configuration flags
+const EMAIL_ENABLED = process.env.EMAIL_ENABLED !== 'false';
+const SENDGRID_SANDBOX = process.env.SENDGRID_SANDBOX === 'true';
+
+// Simple HTML to text fallback
+const htmlToText = (html) => {
+  if (!html) return '';
+  return html
+    .replace(/<style[\s\S]*?<\/style>/gi, '')
+    .replace(/<script[\s\S]*?<\/script>/gi, '')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&');
+};
+
 // Email templates
 const emailTemplates = {
   enquiry_confirmation: {
     subject: 'Enquiry Received - Greenbeam',
     html: (data) => `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <img src="https://res.cloudinary.com/dfonqyqm3/image/upload/v1755127050/GREENBEAM_15_09_2021_logo_R91-01_hpirqf.jpg" alt="Greenbeam Logo" style="width: 100px; height: 100px; margin-bottom: 20px;">
         <h2 style="color: #2E7D32;">Thank you for your enquiry!</h2>
         <p>Dear ${data.customerName},</p>
         <p>We have received your enquiry regarding <strong>${data.productName}</strong>.</p>
@@ -29,6 +45,7 @@ const emailTemplates = {
     subject: 'Response to your enquiry - Greenbeam',
     html: (data) => `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <img src="https://res.cloudinary.com/dfonqyqm3/image/upload/v1755127050/GREENBEAM_15_09_2021_logo_R91-01_hpirqf.jpg" alt="Greenbeam Logo" style="width: 100px; height: 100px; margin-bottom: 20px;">
         <h2 style="color: #2E7D32;">Response to your enquiry</h2>
         <p>Dear ${data.customerName},</p>
         <p>Thank you for your enquiry regarding <strong>${data.productName}</strong>.</p>
@@ -70,11 +87,18 @@ const emailTemplates = {
 
 // Send email function
 const sendEmail = async (emailData) => {
+  const { to, subject, body, type, template, data } = emailData;
+  
+  let emailSubject = subject;
+  let emailBody = body;
+  
   try {
-    const { to, subject, body, type, template, data } = emailData;
-    
-    let emailSubject = subject;
-    let emailBody = body;
+    if (!EMAIL_ENABLED) {
+      throw new Error('Email sending disabled by EMAIL_ENABLED=false');
+    }
+    if (!process.env.SENDGRID_API_KEY || !process.env.SENDGRID_FROM_EMAIL) {
+      throw new Error('Email not configured: missing SENDGRID_API_KEY or SENDGRID_FROM_EMAIL');
+    }
     
     // Use template if provided
     if (template && emailTemplates[template]) {
@@ -88,8 +112,18 @@ const sendEmail = async (emailData) => {
         email: process.env.SENDGRID_FROM_EMAIL,
         name: process.env.SENDGRID_FROM_NAME
       },
+      replyTo: process.env.SENDGRID_REPLY_TO || process.env.SENDGRID_FROM_EMAIL,
       subject: emailSubject,
-      html: emailBody
+      html: emailBody,
+      text: htmlToText(emailBody),
+      trackingSettings: {
+        clickTracking: { enable: false, enableText: false },
+        openTracking: { enable: true }
+      },
+      mailSettings: {
+        sandboxMode: { enable: SENDGRID_SANDBOX }
+      },
+      categories: type ? [String(type)] : undefined
     };
     
     // Send email via SendGrid
@@ -121,8 +155,8 @@ const sendEmail = async (emailData) => {
       await prisma.emailLog.create({
         data: {
           toEmail: emailData.to,
-          subject: emailData.subject,
-          body: emailData.body,
+          subject: emailSubject || emailData.subject || 'Email Subject Unavailable',
+          body: emailBody || emailData.body || 'Email Body Unavailable',
           type: emailData.type || 'general',
           status: 'FAILED'
         }
@@ -130,6 +164,9 @@ const sendEmail = async (emailData) => {
     } catch (logError) {
       console.error('Failed to log email error:', logError);
     }
+    
+    const sgErrors = error.response && error.response.body && error.response.body.errors;
+    const details = Array.isArray(sgErrors) ? sgErrors.map(e => `${e.message}${e.field ? ` (field: ${e.field})` : ''}`).join('; ') : error.message;
     
     throw new Error(`Email sending failed: ${error.message}`);
   }

@@ -16,6 +16,8 @@ const enquiryRoutes = require('./routes/enquiries');
 const productRoutes = require('./routes/products');
 const authRoutes = require('./routes/auth');
 const dashboardRoutes = require('./routes/dashboard');
+const settingsRoutes = require('./routes/settings');
+const uploadRoutes = require('./routes/upload');
 
 // Import database
 const prisma = require('./models');
@@ -93,6 +95,8 @@ app.use('/api/v1/enquiries', enquiryRoutes);
 app.use('/api/v1/products', productRoutes);
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/dashboard', dashboardRoutes);
+app.use('/api/v1/settings', settingsRoutes);
+app.use('/api/v1/upload', uploadRoutes);
 
 // Error Handling Middleware
 const notFoundHandler = (req, res) => {

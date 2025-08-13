@@ -12,7 +12,7 @@ module.exports.Product = prisma.product;
 module.exports.Notification = prisma.notification;
 module.exports.EmailLog = prisma.emailLog;
 module.exports.User = prisma.user;
-
+module.exports.Settings = prisma.settings;
 // Export the Prisma client for raw queries
 module.exports.$queryRaw = prisma.$queryRaw;
 module.exports.$executeRaw = prisma.$executeRaw;
@@ -54,4 +54,5 @@ const {
 module.exports.EnquiryService = EnquiryService;
 module.exports.ProductService = ProductService;
 module.exports.NotificationService = NotificationService;
-module.exports.DashboardService = DashboardService; 
+module.exports.DashboardService = DashboardService;
+

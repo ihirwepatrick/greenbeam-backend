@@ -102,6 +102,36 @@ model User {
   @@map("users")
 }
 
+model Settings {
+  id        Int      @id @default(autoincrement())
+  category  String   @db.VarChar(50)
+  key       String   @db.VarChar(100)
+  value     String?  @db.Text
+  type      String   @default("string") @db.VarChar(20)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  
+  @@unique([category, key])
+  @@map("settings")
+}
+
+model File {
+  id         String   @id @default(cuid())
+  filename   String
+  originalName String @map("original_name")
+  url        String
+  size       Int
+  mimeType   String   @map("mime_type")
+  dimensions Json?
+  type       String   @default("general")
+  folder     String   @default("general")
+  uploadedBy String?  @map("uploaded_by")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+  
+  @@map("files")
+}
+
 // Enums
 enum EnquiryStatus {
   NEW

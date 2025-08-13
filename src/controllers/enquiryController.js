@@ -1,5 +1,5 @@
 const prisma = require('../models');
-const { sendEnquiryConfirmation, sendAdminNotification } = require('../utils/emailService');
+const { sendEnquiryConfirmation, sendAdminNotification, sendEnquiryResponse } = require('../utils/emailService');
 
 class EnquiryController {
   // Create new enquiry
@@ -208,15 +208,30 @@ class EnquiryController {
         throw new Error('Enquiry not found');
       }
 
-      // Create response
+      // Create response (default emailSent to false; will update if email actually sent)
       const response = await prisma.enquiryResponse.create({
         data: {
           enquiryId: id,
           message: responseData.message,
           sentBy: responseData.sentBy || 'Admin',
-          emailSent: responseData.sendEmail || false
+          emailSent: false
         }
       });
+
+      // If requested, attempt to send the email and update flag accordingly
+      let emailWasSent = false;
+      if (responseData.sendEmail) {
+        try {
+          await sendEnquiryResponse(enquiry, response.message);
+          await prisma.enquiryResponse.update({
+            where: { id: response.id },
+            data: { emailSent: true }
+          });
+          emailWasSent = true;
+        } catch (emailError) {
+          console.warn('Failed to send enquiry response email:', emailError.message);
+        }
+      }
 
       // Update enquiry status to RESPONDED
       await prisma.enquiry.update({
@@ -233,7 +248,7 @@ class EnquiryController {
             message: response.message,
             sentBy: response.sentBy,
             sentAt: response.sentAt,
-            emailSent: response.emailSent
+            emailSent: emailWasSent
           }
         }
       };
