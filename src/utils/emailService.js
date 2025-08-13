@@ -1,5 +1,7 @@
 const sgMail = require('@sendgrid/mail');
 const prisma = require('../models');
+const https = require('https');
+const http = require('http');
 
 // Configure SendGrid
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
@@ -7,6 +9,7 @@ sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 // Email configuration flags
 const EMAIL_ENABLED = process.env.EMAIL_ENABLED !== 'false';
 const SENDGRID_SANDBOX = process.env.SENDGRID_SANDBOX === 'true';
+const INLINE_LOGO_URL = process.env.EMAIL_INLINE_LOGO_URL; // optional: fetch and embed as CID
 
 // Simple HTML to text fallback
 const htmlToText = (html) => {
@@ -19,13 +22,30 @@ const htmlToText = (html) => {
     .replace(/&amp;/g, '&');
 };
 
+// Fetch a URL and return base64 content and content-type
+const fetchUrlAsBase64 = (url) => new Promise((resolve, reject) => {
+  const client = url.startsWith('https') ? https : http;
+  client.get(url, (res) => {
+    if (res.statusCode !== 200) {
+      return reject(new Error(`Failed to fetch ${url}: HTTP ${res.statusCode}`));
+    }
+    const chunks = [];
+    res.on('data', (d) => chunks.push(d));
+    res.on('end', () => {
+      const buffer = Buffer.concat(chunks);
+      const contentType = res.headers['content-type'] || 'image/png';
+      resolve({ base64: buffer.toString('base64'), contentType });
+    });
+  }).on('error', reject);
+});
+
 // Email templates
 const emailTemplates = {
   enquiry_confirmation: {
     subject: 'Enquiry Received - Greenbeam',
     html: (data) => `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <img src="https://res.cloudinary.com/dfonqyqm3/image/upload/v1755127050/GREENBEAM_15_09_2021_logo_R91-01_hpirqf.jpg" alt="Greenbeam Logo" style="width: 100px; height: 100px; margin-bottom: 20px;">
+        <img src="https://res.cloudinary.com/dfonqyqm3/image/upload/v1755127050/GREENBEAM_15_09_2021_logo_R91-01_hpirqf.jpg" alt="Greenbeam Logo" width="100" height="100" style="display:block; margin-bottom: 20px; border:0; outline:none; text-decoration:none;">
         <h2 style="color: #2E7D32;">Thank you for your enquiry!</h2>
         <p>Dear ${data.customerName},</p>
         <p>We have received your enquiry regarding <strong>${data.productName}</strong>.</p>
@@ -45,7 +65,7 @@ const emailTemplates = {
     subject: 'Response to your enquiry - Greenbeam',
     html: (data) => `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <img src="https://res.cloudinary.com/dfonqyqm3/image/upload/v1755127050/GREENBEAM_15_09_2021_logo_R91-01_hpirqf.jpg" alt="Greenbeam Logo" style="width: 100px; height: 100px; margin-bottom: 20px;">
+        <img src="https://res.cloudinary.com/dfonqyqm3/image/upload/v1755127050/GREENBEAM_15_09_2021_logo_R91-01_hpirqf.jpg" alt="Greenbeam Logo" width="100" height="100" style="display:block; margin-bottom: 20px; border:0; outline:none; text-decoration:none;">
         <h2 style="color: #2E7D32;">Response to your enquiry</h2>
         <p>Dear ${data.customerName},</p>
         <p>Thank you for your enquiry regarding <strong>${data.productName}</strong>.</p>
@@ -106,6 +126,25 @@ const sendEmail = async (emailData) => {
       emailBody = emailTemplates[template].html(data);
     }
     
+    const attachments = [];
+    // Optionally embed logo inline via CID:logo
+    if (INLINE_LOGO_URL) {
+      try {
+        const { base64, contentType } = await fetchUrlAsBase64(INLINE_LOGO_URL);
+        attachments.push({
+          content: base64,
+          filename: 'logo',
+          type: contentType,
+          disposition: 'inline',
+          contentId: 'logo'
+        });
+        // Replace any existing Cloudinary/logo src with cid:logo
+        emailBody = emailBody.replace(/src="https?:\/\/[^"']+\/GREENBEAM_15_09_2021_logo[^"']+"/i, 'src="cid:logo"');
+      } catch (e) {
+        console.warn('Failed to embed inline logo, using remote URL:', e.message);
+      }
+    }
+
     const msg = {
       to,
       from: {
@@ -123,7 +162,8 @@ const sendEmail = async (emailData) => {
       mailSettings: {
         sandboxMode: { enable: SENDGRID_SANDBOX }
       },
-      categories: type ? [String(type)] : undefined
+      categories: type ? [String(type)] : undefined,
+      attachments: attachments.length ? attachments : undefined
     };
     
     // Send email via SendGrid
