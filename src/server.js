@@ -62,7 +62,7 @@ app.use(helmet({
 app.use(cors({
   origin: ['http://localhost:5173', 'http://127.0.0.1:5173', 'http://localhost:3001', 
            'http://127.0.0.1:3001', 'http://192.168.56.1:3001', 
-           'http://localhost:3000', 'http://127.0.0.1:3000', 'https://greenbeam-frontend.vercel.app'],
+           'http://localhost:3000', 'http://127.0.0.1:3000', 'https://greenbeam-frontend.vercel.app', 'https://greenbeam.online'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Origin', 'X-Requested-With', 'Accept', 'Access-Control-Allow-Headers']
