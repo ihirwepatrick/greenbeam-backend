@@ -1,0 +1,988 @@
+{
+  "settings_api_test_data": {
+    "base_url": "http://localhost:3000/api/v1",
+    "auth_header": "Authorization: Bearer <admin_token>",
+    
+    "1_initialize_default_settings": {
+      "endpoint": "POST /api/v1/settings/initialize",
+      "method": "POST",
+      "url": "/api/v1/settings/initialize",
+      "headers": {
+        "Authorization": "Bearer <admin_token>"
+      },
+      "expected_response": {
+        "success": true,
+        "message": "Default settings initialized successfully"
+      }
+    },
+
+    "2_get_all_settings": {
+      "endpoint": "GET /api/v1/settings",
+      "method": "GET",
+      "url": "/api/v1/settings",
+      "headers": {
+        "Authorization": "Bearer <admin_token>"
+      },
+      "expected_response": {
+        "success": true,
+        "data": {
+          "general": {
+            "companyName": "Greenbeam",
+            "companyEmail": "info@greenbeam.com",
+            "companyPhone": "+250 788 123 456",
+            "companyAddress": "Kigali, Rwanda",
+            "timezone": "Africa/Kigali",
+            "currency": "RWF",
+            "language": "en",
+            "dateFormat": "DD/MM/YYYY",
+            "timeFormat": "24h"
+          },
+          "email": {
+            "smtpHost": "smtp.gmail.com",
+            "smtpPort": 587,
+            "smtpUser": "noreply@greenbeam.com",
+            "smtpPassword": "",
+            "fromName": "Greenbeam Team",
+            "fromEmail": "noreply@greenbeam.com",
+            "replyTo": "support@greenbeam.com"
+          },
+          "notifications": {
+            "emailNotifications": true,
+            "adminEmail": "admin@greenbeam.com",
+            "enquiryNotifications": true,
+            "systemNotifications": true,
+            "notificationFrequency": "immediate"
+          },
+          "security": {
+            "sessionTimeout": 3600,
+            "maxLoginAttempts": 5,
+            "passwordPolicy": {
+              "minLength": 8,
+              "requireUppercase": true,
+              "requireLowercase": true,
+              "requireNumbers": true,
+              "requireSpecialChars": true
+            },
+            "twoFactorAuth": false
+          },
+          "backup": {
+            "autoBackup": true,
+            "backupFrequency": "daily",
+            "backupRetention": 30,
+            "backupLocation": "cloud"
+          }
+        }
+      }
+    },
+
+    "3_get_settings_by_category": {
+      "general": {
+        "endpoint": "GET /api/v1/settings/general",
+        "method": "GET",
+        "url": "/api/v1/settings/general",
+        "headers": {
+          "Authorization": "Bearer <admin_token>"
+        },
+        "expected_response": {
+          "success": true,
+          "data": {
+            "companyName": "Greenbeam",
+            "companyEmail": "info@greenbeam.com",
+            "companyPhone": "+250 788 123 456",
+            "companyAddress": "Kigali, Rwanda",
+            "timezone": "Africa/Kigali",
+            "currency": "RWF",
+            "language": "en",
+            "dateFormat": "DD/MM/YYYY",
+            "timeFormat": "24h"
+          }
+        }
+      },
+      "email": {
+        "endpoint": "GET /api/v1/settings/email",
+        "method": "GET",
+        "url": "/api/v1/settings/email",
+        "headers": {
+          "Authorization": "Bearer <admin_token>"
+        },
+        "expected_response": {
+          "success": true,
+          "data": {
+            "smtpHost": "smtp.gmail.com",
+            "smtpPort": 587,
+            "smtpUser": "noreply@greenbeam.com",
+            "smtpPassword": "",
+            "fromName": "Greenbeam Team",
+            "fromEmail": "noreply@greenbeam.com",
+            "replyTo": "support@greenbeam.com"
+          }
+        }
+      },
+      "notifications": {
+        "endpoint": "GET /api/v1/settings/notifications",
+        "method": "GET",
+        "url": "/api/v1/settings/notifications",
+        "headers": {
+          "Authorization": "Bearer <admin_token>"
+        },
+        "expected_response": {
+          "success": true,
+          "data": {
+            "emailNotifications": true,
+            "adminEmail": "admin@greenbeam.com",
+            "enquiryNotifications": true,
+            "systemNotifications": true,
+            "notificationFrequency": "immediate"
+          }
+        }
+      },
+      "security": {
+        "endpoint": "GET /api/v1/settings/security",
+        "method": "GET",
+        "url": "/api/v1/settings/security",
+        "headers": {
+          "Authorization": "Bearer <admin_token>"
+        },
+        "expected_response": {
+          "success": true,
+          "data": {
+            "sessionTimeout": 3600,
+            "maxLoginAttempts": 5,
+            "passwordPolicy": {
+              "minLength": 8,
+              "requireUppercase": true,
+              "requireLowercase": true,
+              "requireNumbers": true,
+              "requireSpecialChars": true
+            },
+            "twoFactorAuth": false
+          }
+        }
+      },
+      "backup": {
+        "endpoint": "GET /api/v1/settings/backup",
+        "method": "GET",
+        "url": "/api/v1/settings/backup",
+        "headers": {
+          "Authorization": "Bearer <admin_token>"
+        },
+        "expected_response": {
+          "success": true,
+          "data": {
+            "autoBackup": true,
+            "backupFrequency": "daily",
+            "backupRetention": 30,
+            "backupLocation": "cloud"
+          }
+        }
+      }
+    },
+
+    "4_update_settings_by_category": {
+      "general": {
+        "endpoint": "PUT /api/v1/settings/general",
+        "method": "PUT",
+        "url": "/api/v1/settings/general",
+        "headers": {
+          "Authorization": "Bearer <admin_token>",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "companyName": "Greenbeam Solutions",
+          "companyEmail": "info@greenbeam.com",
+          "companyPhone": "+250 788 123 456",
+          "companyAddress": "Kigali, Rwanda",
+          "timezone": "Africa/Kigali",
+          "currency": "RWF",
+          "language": "en",
+          "dateFormat": "DD/MM/YYYY",
+          "timeFormat": "24h"
+        },
+        "expected_response": {
+          "success": true,
+          "data": {
+            "companyName": "Greenbeam Solutions",
+            "companyEmail": "info@greenbeam.com",
+            "companyPhone": "+250 788 123 456",
+            "companyAddress": "Kigali, Rwanda",
+            "timezone": "Africa/Kigali",
+            "currency": "RWF",
+            "language": "en",
+            "dateFormat": "DD/MM/YYYY",
+            "timeFormat": "24h"
+          }
+        }
+      },
+      "email": {
+        "endpoint": "PUT /api/v1/settings/email",
+        "method": "PUT",
+        "url": "/api/v1/settings/email",
+        "headers": {
+          "Authorization": "Bearer <admin_token>",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "smtpHost": "smtp.gmail.com",
+          "smtpPort": 587,
+          "smtpUser": "noreply@greenbeam.com",
+          "smtpPassword": "your_secure_password_here",
+          "fromName": "Greenbeam Team",
+          "fromEmail": "noreply@greenbeam.com",
+          "replyTo": "support@greenbeam.com"
+        },
+        "expected_response": {
+          "success": true,
+          "data": {
+            "smtpHost": "smtp.gmail.com",
+            "smtpPort": 587,
+            "smtpUser": "noreply@greenbeam.com",
+            "smtpPassword": "your_secure_password_here",
+            "fromName": "Greenbeam Team",
+            "fromEmail": "noreply@greenbeam.com",
+            "replyTo": "support@greenbeam.com"
+          }
+        }
+      },
+      "notifications": {
+        "endpoint": "PUT /api/v1/settings/notifications",
+        "method": "PUT",
+        "url": "/api/v1/settings/notifications",
+        "headers": {
+          "Authorization": "Bearer <admin_token>",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "emailNotifications": true,
+          "adminEmail": "admin@greenbeam.com",
+          "enquiryNotifications": true,
+          "systemNotifications": true,
+          "notificationFrequency": "immediate"
+        },
+        "expected_response": {
+          "success": true,
+          "data": {
+            "emailNotifications": true,
+            "adminEmail": "admin@greenbeam.com",
+            "enquiryNotifications": true,
+            "systemNotifications": true,
+            "notificationFrequency": "immediate"
+          }
+        }
+      },
+      "security": {
+        "endpoint": "PUT /api/v1/settings/security",
+        "method": "PUT",
+        "url": "/api/v1/settings/security",
+        "headers": {
+          "Authorization": "Bearer <admin_token>",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "sessionTimeout": 3600,
+          "maxLoginAttempts": 5,
+          "passwordPolicy": {
+            "minLength": 8,
+            "requireUppercase": true,
+            "requireLowercase": true,
+            "requireNumbers": true,
+            "requireSpecialChars": true
+          },
+          "twoFactorAuth": false
+        },
+        "expected_response": {
+          "success": true,
+          "data": {
+            "sessionTimeout": 3600,
+            "maxLoginAttempts": 5,
+            "passwordPolicy": {
+              "minLength": 8,
+              "requireUppercase": true,
+              "requireLowercase": true,
+              "requireNumbers": true,
+              "requireSpecialChars": true
+            },
+            "twoFactorAuth": false
+          }
+        }
+      },
+      "backup": {
+        "endpoint": "PUT /api/v1/settings/backup",
+        "method": "PUT",
+        "url": "/api/v1/settings/backup",
+        "headers": {
+          "Authorization": "Bearer <admin_token>",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "autoBackup": true,
+          "backupFrequency": "daily",
+          "backupRetention": 30,
+          "backupLocation": "cloud"
+        },
+        "expected_response": {
+          "success": true,
+          "data": {
+            "autoBackup": true,
+            "backupFrequency": "daily",
+            "backupRetention": 30,
+            "backupLocation": "cloud"
+          }
+        }
+      }
+    },
+
+    "5_update_single_setting": {
+      "company_name": {
+        "endpoint": "PUT /api/v1/settings/general/companyName",
+        "method": "PUT",
+        "url": "/api/v1/settings/general/companyName",
+        "headers": {
+          "Authorization": "Bearer <admin_token>",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "value": "Greenbeam Solutions"
+        },
+        "expected_response": {
+          "success": true,
+          "data": {
+            "category": "general",
+            "key": "companyName",
+            "value": "Greenbeam Solutions",
+            "type": "string",
+            "updatedAt": "2024-01-15T10:30:00.000Z"
+          }
+        }
+      },
+      "smtp_port": {
+        "endpoint": "PUT /api/v1/settings/email/smtpPort",
+        "method": "PUT",
+        "url": "/api/v1/settings/email/smtpPort",
+        "headers": {
+          "Authorization": "Bearer <admin_token>",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "value": 587
+        },
+        "expected_response": {
+          "success": true,
+          "data": {
+            "category": "email",
+            "key": "smtpPort",
+            "value": 587,
+            "type": "number",
+            "updatedAt": "2024-01-15T10:30:00.000Z"
+          }
+        }
+      },
+      "email_notifications": {
+        "endpoint": "PUT /api/v1/settings/notifications/emailNotifications",
+        "method": "PUT",
+        "url": "/api/v1/settings/notifications/emailNotifications",
+        "headers": {
+          "Authorization": "Bearer <admin_token>",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "value": true
+        },
+        "expected_response": {
+          "success": true,
+          "data": {
+            "category": "notifications",
+            "key": "emailNotifications",
+            "value": true,
+            "type": "boolean",
+            "updatedAt": "2024-01-15T10:30:00.000Z"
+          }
+        }
+      }
+    },
+
+    "6_delete_setting": {
+      "endpoint": "DELETE /api/v1/settings/general/customField",
+      "method": "DELETE",
+      "url": "/api/v1/settings/general/customField",
+      "headers": {
+        "Authorization": "Bearer <admin_token>"
+      },
+      "expected_response": {
+        "success": true,
+        "message": "Setting general.customField deleted successfully"
+      }
+    },
+
+    "7_website_settings": {
+      "get_flattened": {
+        "endpoint": "GET /api/v1/settings/website/flattened",
+        "method": "GET",
+        "url": "/api/v1/settings/website/flattened",
+        "headers": {
+          "Authorization": "Bearer <admin_token>"
+        },
+        "expected_response": {
+          "success": true,
+          "data": {
+            "branding.logo": "",
+            "branding.favicon": "",
+            "branding.primaryColor": "#0a6650",
+            "branding.secondaryColor": "#084c3d",
+            "branding.accentColor": "#10b981",
+            "branding.fontFamily": "Inter",
+            "branding.fontSize": "16px",
+            "branding.buttonStyle": "rounded",
+            "branding.borderRadius": "8px",
+            "content.siteTitle": "Greenbeam - Sustainable Energy Solutions",
+            "content.siteDescription": "Leading provider of solar energy solutions in Rwanda"
+          }
+        }
+      },
+      "update_nested": {
+        "endpoint": "PUT /api/v1/settings/website/nested",
+        "method": "PUT",
+        "url": "/api/v1/settings/website/nested",
+        "headers": {
+          "Authorization": "Bearer <admin_token>",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "branding": {
+            "logo": "https://storage.greenbeam.com/logo.png",
+            "primaryColor": "#0a6650"
+          },
+          "content": {
+            "siteTitle": "Greenbeam - Sustainable Energy Solutions"
+          }
+        },
+        "expected_response": {
+          "success": true,
+          "message": "Website settings updated successfully"
+        }
+      }
+    },
+
+    "8_website_branding": {
+      "get": {
+        "endpoint": "GET /api/v1/settings/website/branding",
+        "method": "GET",
+        "url": "/api/v1/settings/website/branding",
+        "headers": {
+          "Authorization": "Bearer <admin_token>"
+        },
+        "expected_response": {
+          "success": true,
+          "data": {
+            "logo": "",
+            "favicon": "",
+            "primaryColor": "#0a6650",
+            "secondaryColor": "#084c3d",
+            "accentColor": "#10b981",
+            "fontFamily": "Inter",
+            "fontSize": "16px",
+            "buttonStyle": "rounded",
+            "borderRadius": "8px"
+          }
+        }
+      },
+      "update": {
+        "endpoint": "PUT /api/v1/settings/website/branding",
+        "method": "PUT",
+        "url": "/api/v1/settings/website/branding",
+        "headers": {
+          "Authorization": "Bearer <admin_token>",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "logo": "https://storage.greenbeam.com/logo.png",
+          "favicon": "https://storage.greenbeam.com/favicon.ico",
+          "primaryColor": "#0a6650",
+          "secondaryColor": "#084c3d",
+          "accentColor": "#10b981",
+          "fontFamily": "Inter",
+          "fontSize": "16px",
+          "buttonStyle": "rounded",
+          "borderRadius": "8px"
+        },
+        "expected_response": {
+          "success": true,
+          "message": "Website settings updated successfully"
+        }
+      }
+    },
+
+    "9_website_content": {
+      "get": {
+        "endpoint": "GET /api/v1/settings/website/content",
+        "method": "GET",
+        "url": "/api/v1/settings/website/content",
+        "headers": {
+          "Authorization": "Bearer <admin_token>"
+        },
+        "expected_response": {
+          "success": true,
+          "data": {
+            "siteTitle": "Greenbeam - Sustainable Energy Solutions",
+            "siteDescription": "Leading provider of solar energy solutions in Rwanda",
+            "homepageHero": {
+              "title": "Powering Rwanda's Future",
+              "subtitle": "Sustainable solar energy solutions for homes and businesses",
+              "ctaText": "Explore Products",
+              "ctaLink": "/products",
+              "backgroundImage": "",
+              "showOverlay": true,
+              "overlayOpacity": 0.6
+            },
+            "aboutSection": {
+              "title": "About Greenbeam",
+              "content": "We are committed to providing sustainable energy solutions...",
+              "showTeam": true,
+              "showStats": true,
+              "stats": [
+                {
+                  "label": "Projects Completed",
+                  "value": "500+",
+                  "icon": "check-circle"
+                },
+                {
+                  "label": "Happy Customers",
+                  "value": "1000+",
+                  "icon": "users"
+                }
+              ]
+            },
+            "contactInfo": {
+              "address": "Kigali, Rwanda",
+              "phone": "+250 788 123 456",
+              "email": "info@greenbeam.com",
+              "workingHours": "Mon-Fri: 8AM-6PM",
+              "mapLocation": {
+                "latitude": -1.9441,
+                "longitude": 30.0619,
+                "zoom": 15
+              },
+              "showMap": true,
+              "showContactForm": true
+            },
+            "footer": {
+              "showNewsletter": true,
+              "newsletterTitle": "Stay Updated",
+              "newsletterDescription": "Get the latest updates on our products and services",
+              "showSocialLinks": true,
+              "copyrightText": "© 2024 Greenbeam. All rights reserved."
+            }
+          }
+        }
+      },
+      "update": {
+        "endpoint": "PUT /api/v1/settings/website/content",
+        "method": "PUT",
+        "url": "/api/v1/settings/website/content",
+        "headers": {
+          "Authorization": "Bearer <admin_token>",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "siteTitle": "Greenbeam - Sustainable Energy Solutions",
+          "siteDescription": "Leading provider of solar energy solutions in Rwanda",
+          "homepageHero": {
+            "title": "Powering Rwanda's Future",
+            "subtitle": "Sustainable solar energy solutions for homes and businesses",
+            "ctaText": "Explore Products",
+            "ctaLink": "/products",
+            "backgroundImage": "https://storage.greenbeam.com/hero-bg.jpg",
+            "showOverlay": true,
+            "overlayOpacity": 0.6
+          },
+          "aboutSection": {
+            "title": "About Greenbeam",
+            "content": "We are committed to providing sustainable energy solutions that power Rwanda's future. Our mission is to make clean energy accessible to everyone.",
+            "showTeam": true,
+            "showStats": true,
+            "stats": [
+              {
+                "label": "Projects Completed",
+                "value": "500+",
+                "icon": "check-circle"
+              },
+              {
+                "label": "Happy Customers",
+                "value": "1000+",
+                "icon": "users"
+              },
+              {
+                "label": "Energy Generated",
+                "value": "2.5MW",
+                "icon": "zap"
+              }
+            ]
+          },
+          "contactInfo": {
+            "address": "Kigali, Rwanda",
+            "phone": "+250 788 123 456",
+            "email": "info@greenbeam.com",
+            "workingHours": "Mon-Fri: 8AM-6PM",
+            "mapLocation": {
+              "latitude": -1.9441,
+              "longitude": 30.0619,
+              "zoom": 15
+            },
+            "showMap": true,
+            "showContactForm": true
+          },
+          "footer": {
+            "showNewsletter": true,
+            "newsletterTitle": "Stay Updated",
+            "newsletterDescription": "Get the latest updates on our products and services",
+            "showSocialLinks": true,
+            "copyrightText": "© 2024 Greenbeam. All rights reserved."
+          }
+        },
+        "expected_response": {
+          "success": true,
+          "message": "Website settings updated successfully"
+        }
+      }
+    },
+
+    "10_website_seo": {
+      "get": {
+        "endpoint": "GET /api/v1/settings/website/seo",
+        "method": "GET",
+        "url": "/api/v1/settings/website/seo",
+        "headers": {
+          "Authorization": "Bearer <admin_token>"
+        },
+        "expected_response": {
+          "success": true,
+          "data": {
+            "metaTitle": "Greenbeam - Solar Energy Solutions Rwanda",
+            "metaDescription": "Leading solar energy provider in Rwanda. Sustainable solutions for homes and businesses.",
+            "metaKeywords": "solar energy, Rwanda, renewable energy, solar panels",
+            "ogImage": "",
+            "twitterCard": "summary_large_image",
+            "googleAnalyticsId": "",
+            "googleTagManagerId": "",
+            "sitemapEnabled": true,
+            "robotsTxt": "User-agent: *\nAllow: /"
+          }
+        }
+      },
+      "update": {
+        "endpoint": "PUT /api/v1/settings/website/seo",
+        "method": "PUT",
+        "url": "/api/v1/settings/website/seo",
+        "headers": {
+          "Authorization": "Bearer <admin_token>",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "metaTitle": "Greenbeam - Solar Energy Solutions Rwanda",
+          "metaDescription": "Leading solar energy provider in Rwanda. Sustainable solutions for homes and businesses.",
+          "metaKeywords": "solar energy, Rwanda, renewable energy, solar panels, green energy",
+          "ogImage": "https://storage.greenbeam.com/og-image.jpg",
+          "twitterCard": "summary_large_image",
+          "googleAnalyticsId": "GA-123456789",
+          "googleTagManagerId": "GTM-ABCDEF",
+          "sitemapEnabled": true,
+          "robotsTxt": "User-agent: *\nAllow: /\nDisallow: /admin/\nDisallow: /api/"
+        },
+        "expected_response": {
+          "success": true,
+          "message": "Website settings updated successfully"
+        }
+      }
+    },
+
+    "11_website_social": {
+      "get": {
+        "endpoint": "GET /api/v1/settings/website/social",
+        "method": "GET",
+        "url": "/api/v1/settings/website/social",
+        "headers": {
+          "Authorization": "Bearer <admin_token>"
+        },
+        "expected_response": {
+          "success": true,
+          "data": {
+            "facebook": "",
+            "twitter": "",
+            "linkedin": "",
+            "instagram": "",
+            "youtube": "",
+            "showSocialIcons": true,
+            "socialIconsPosition": "footer",
+            "socialShareEnabled": true
+          }
+        }
+      },
+      "update": {
+        "endpoint": "PUT /api/v1/settings/website/social",
+        "method": "PUT",
+        "url": "/api/v1/settings/website/social",
+        "headers": {
+          "Authorization": "Bearer <admin_token>",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "facebook": "https://facebook.com/greenbeam",
+          "twitter": "https://twitter.com/greenbeam",
+          "linkedin": "https://linkedin.com/company/greenbeam",
+          "instagram": "https://instagram.com/greenbeam",
+          "youtube": "https://youtube.com/greenbeam",
+          "showSocialIcons": true,
+          "socialIconsPosition": "footer",
+          "socialShareEnabled": true
+        },
+        "expected_response": {
+          "success": true,
+          "message": "Website settings updated successfully"
+        }
+      }
+    },
+
+    "12_website_features": {
+      "get": {
+        "endpoint": "GET /api/v1/settings/website/features",
+        "method": "GET",
+        "url": "/api/v1/settings/website/features",
+        "headers": {
+          "Authorization": "Bearer <admin_token>"
+        },
+        "expected_response": {
+          "success": true,
+          "data": {
+            "enableBlog": true,
+            "enableNewsletter": true,
+            "enableReviews": false,
+            "enableChat": true,
+            "enableSearch": true,
+            "enableFilters": true,
+            "productsPerPage": 12,
+            "enablePagination": true,
+            "enableRelatedProducts": true,
+            "enableProductComparison": false,
+            "enableWishlist": false,
+            "enableProductCategories": true,
+            "enableProductTags": true
+          }
+        }
+      },
+      "update": {
+        "endpoint": "PUT /api/v1/settings/website/features",
+        "method": "PUT",
+        "url": "/api/v1/settings/website/features",
+        "headers": {
+          "Authorization": "Bearer <admin_token>",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "enableBlog": true,
+          "enableNewsletter": true,
+          "enableReviews": false,
+          "enableChat": true,
+          "enableSearch": true,
+          "enableFilters": true,
+          "productsPerPage": 12,
+          "enablePagination": true,
+          "enableRelatedProducts": true,
+          "enableProductComparison": false,
+          "enableWishlist": false,
+          "enableProductCategories": true,
+          "enableProductTags": true
+        },
+        "expected_response": {
+          "success": true,
+          "message": "Website settings updated successfully"
+        }
+      }
+    },
+
+    "13_website_layout": {
+      "get": {
+        "endpoint": "GET /api/v1/settings/website/layout",
+        "method": "GET",
+        "url": "/api/v1/settings/website/layout",
+        "headers": {
+          "Authorization": "Bearer <admin_token>"
+        },
+        "expected_response": {
+          "success": true,
+          "data": {
+            "headerStyle": "fixed",
+            "showBreadcrumbs": true,
+            "sidebarPosition": "right",
+            "productGridColumns": 3,
+            "showProductImages": true,
+            "imageAspectRatio": "16:9",
+            "enableLazyLoading": true,
+            "showLoadingSpinner": true
+          }
+        }
+      },
+      "update": {
+        "endpoint": "PUT /api/v1/settings/website/layout",
+        "method": "PUT",
+        "url": "/api/v1/settings/website/layout",
+        "headers": {
+          "Authorization": "Bearer <admin_token>",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "headerStyle": "fixed",
+          "showBreadcrumbs": true,
+          "sidebarPosition": "right",
+          "productGridColumns": 3,
+          "showProductImages": true,
+          "imageAspectRatio": "16:9",
+          "enableLazyLoading": true,
+          "showLoadingSpinner": true
+        },
+        "expected_response": {
+          "success": true,
+          "message": "Website settings updated successfully"
+        }
+      }
+    },
+
+    "14_website_performance": {
+      "get": {
+        "endpoint": "GET /api/v1/settings/website/performance",
+        "method": "GET",
+        "url": "/api/v1/settings/website/performance",
+        "headers": {
+          "Authorization": "Bearer <admin_token>"
+        },
+        "expected_response": {
+          "success": true,
+          "data": {
+            "enableCaching": true,
+            "cacheDuration": 3600,
+            "enableCompression": true,
+            "enableCDN": true,
+            "cdnUrl": "",
+            "imageOptimization": true,
+            "lazyLoadImages": true
+          }
+        }
+      },
+      "update": {
+        "endpoint": "PUT /api/v1/settings/website/performance",
+        "method": "PUT",
+        "url": "/api/v1/settings/website/performance",
+        "headers": {
+          "Authorization": "Bearer <admin_token>",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "enableCaching": true,
+          "cacheDuration": 3600,
+          "enableCompression": true,
+          "enableCDN": true,
+          "cdnUrl": "https://cdn.greenbeam.com",
+          "imageOptimization": true,
+          "lazyLoadImages": true
+        },
+        "expected_response": {
+          "success": true,
+          "message": "Website settings updated successfully"
+        }
+      }
+    },
+
+    "15_website_customization": {
+      "get": {
+        "endpoint": "GET /api/v1/settings/website/customization",
+        "method": "GET",
+        "url": "/api/v1/settings/website/customization",
+        "headers": {
+          "Authorization": "Bearer <admin_token>"
+        },
+        "expected_response": {
+          "success": true,
+          "data": {
+            "customCSS": "",
+            "customJS": "",
+            "enableCustomThemes": false,
+            "themeMode": "light",
+            "enableDarkMode": false,
+            "customFonts": [],
+            "enableAnimations": true,
+            "animationSpeed": "normal"
+          }
+        }
+      },
+      "update": {
+        "endpoint": "PUT /api/v1/settings/website/customization",
+        "method": "PUT",
+        "url": "/api/v1/settings/website/customization",
+        "headers": {
+          "Authorization": "Bearer <admin_token>",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "customCSS": "",
+          "customJS": "",
+          "enableCustomThemes": false,
+          "themeMode": "light",
+          "enableDarkMode": false,
+          "customFonts": [],
+          "enableAnimations": true,
+          "animationSpeed": "normal"
+        },
+        "expected_response": {
+          "success": true,
+          "message": "Website settings updated successfully"
+        }
+      }
+    },
+
+    "16_error_test_cases": {
+      "invalid_authentication": {
+        "endpoint": "GET /api/v1/settings",
+        "method": "GET",
+        "url": "/api/v1/settings",
+        "headers": {},
+        "expected_response": {
+          "success": false,
+          "error": {
+            "code": "UNAUTHORIZED",
+            "message": "Access token required"
+          }
+        }
+      },
+      "invalid_category": {
+        "endpoint": "GET /api/v1/settings/invalid_category",
+        "method": "GET",
+        "url": "/api/v1/settings/invalid_category",
+        "headers": {
+          "Authorization": "Bearer <admin_token>"
+        },
+        "expected_response": {
+          "success": false,
+          "error": {
+            "code": "INTERNAL_SERVER_ERROR",
+            "message": "Failed to fetch invalid_category settings"
+          }
+        }
+      },
+      "missing_value": {
+        "endpoint": "PUT /api/v1/settings/general/companyName",
+        "method": "PUT",
+        "url": "/api/v1/settings/general/companyName",
+        "headers": {
+          "Authorization": "Bearer <admin_token>",
+          "Content-Type": "application/json"
+        },
+        "body": {},
+        "expected_response": {
+          "success": false,
+          "error": {
+            "code": "VALIDATION_ERROR",
+            "message": "Value is required"
+          }
+        }
+      }
+    }
+  }
+}

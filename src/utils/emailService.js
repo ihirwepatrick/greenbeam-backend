@@ -9,6 +9,9 @@ sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 // Email configuration flags
 const EMAIL_ENABLED = process.env.EMAIL_ENABLED !== 'false';
 const SENDGRID_SANDBOX = process.env.SENDGRID_SANDBOX === 'true';
+const EMAIL_MAX_RETRIES = parseInt(process.env.EMAIL_MAX_RETRIES || '3', 10);
+const EMAIL_RETRY_BASE_MS = parseInt(process.env.EMAIL_RETRY_BASE_MS || '500', 10); // exponential backoff base
+const EMAIL_FAIL_SILENTLY = process.env.EMAIL_FAIL_SILENTLY === 'true' || process.env.NODE_ENV !== 'production';
 const INLINE_LOGO_URL = process.env.EMAIL_INLINE_LOGO_URL; // optional: fetch and embed as CID
 
 // Simple HTML to text fallback
@@ -38,6 +41,23 @@ const fetchUrlAsBase64 = (url) => new Promise((resolve, reject) => {
     });
   }).on('error', reject);
 });
+
+// Utility helpers
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+const isTransientNetworkError = (error) => {
+  const transientCodes = new Set([
+    'EAI_AGAIN', // DNS lookup timeout
+    'ENOTFOUND', // DNS host not found
+    'ECONNRESET',
+    'ETIMEDOUT',
+    'ECONNABORTED', // axios timeout
+    'ENETUNREACH',
+    'EHOSTUNREACH'
+  ]);
+  const code = error?.code || error?.cause?.code;
+  return code && transientCodes.has(code);
+};
 
 // Email templates
 const emailTemplates = {
@@ -165,9 +185,29 @@ const sendEmail = async (emailData) => {
       categories: type ? [String(type)] : undefined,
       attachments: attachments.length ? attachments : undefined
     };
-    
-    // Send email via SendGrid
-    const response = await sgMail.send(msg);
+
+    // Send email via SendGrid with retry for transient DNS/network errors
+    let response;
+    let attempt = 0;
+    let lastError;
+    while (attempt <= EMAIL_MAX_RETRIES) {
+      try {
+        response = await sgMail.send(msg);
+        lastError = undefined;
+        break;
+      } catch (sendError) {
+        lastError = sendError;
+        if (isTransientNetworkError(sendError) && attempt < EMAIL_MAX_RETRIES) {
+          const delay = EMAIL_RETRY_BASE_MS * Math.pow(2, attempt);
+          console.warn(`[EMAIL] Transient error (${sendError.code || sendError.message}). Retrying in ${delay}ms... (attempt ${attempt + 1}/${EMAIL_MAX_RETRIES})`);
+          await sleep(delay);
+          attempt += 1;
+          continue;
+        }
+        // Non-transient or retries exhausted
+        throw sendError;
+      }
+    }
     
     // Log email to database
     await prisma.emailLog.create({
@@ -188,8 +228,18 @@ const sendEmail = async (emailData) => {
     };
     
   } catch (error) {
-    console.error('Email sending failed:', error);
-    
+    // Sanitize logs to avoid leaking API keys or headers
+    const safeLog = {
+      message: error.message,
+      code: error.code || error.cause?.code,
+      responseStatus: error.response?.status,
+      responseErrors: error.response?.body?.errors,
+      hint: (error.code === 'ENOTFOUND' || error.cause?.code === 'ENOTFOUND' || error.code === 'EAI_AGAIN' || error.cause?.code === 'EAI_AGAIN')
+        ? 'DNS lookup failed or timed out for SendGrid host. Check internet connectivity, DNS, or proxy.'
+        : undefined
+    };
+    console.error('Email sending failed:', safeLog);
+
     // Log failed email to database
     try {
       await prisma.emailLog.create({
@@ -202,12 +252,18 @@ const sendEmail = async (emailData) => {
         }
       });
     } catch (logError) {
-      console.error('Failed to log email error:', logError);
+      console.error('Failed to log email error:', {
+        message: logError.message,
+        code: logError.code
+      });
     }
-    
-    const sgErrors = error.response && error.response.body && error.response.body.errors;
-    const details = Array.isArray(sgErrors) ? sgErrors.map(e => `${e.message}${e.field ? ` (field: ${e.field})` : ''}`).join('; ') : error.message;
-    
+
+    if (EMAIL_FAIL_SILENTLY && isTransientNetworkError(error)) {
+      // In non-production or when configured, do not throw on transient network failures
+      console.warn('[EMAIL] Transient network failure. Skipping email send (fail silently enabled).');
+      return { success: false, skipped: true, reason: error.code || error.message };
+    }
+
     throw new Error(`Email sending failed: ${error.message}`);
   }
 };

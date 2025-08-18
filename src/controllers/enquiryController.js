@@ -77,13 +77,23 @@ class EnquiryController {
         ];
       }
 
-      // Build order by clause
-      const orderBy = {};
-      if (sortBy) {
-        orderBy[sortBy] = sortOrder;
-      } else {
-        orderBy.createdAt = 'desc';
-      }
+      // Build order by clause with whitelist to prevent invalid field errors
+      const allowedSortFields = [
+        'createdAt',
+        'updatedAt',
+        'customerName',
+        'email',
+        'status',
+        'priority',
+        'source'
+      ];
+
+      const orderBy = (() => {
+        if (sortBy && allowedSortFields.includes(sortBy)) {
+          return { [sortBy]: sortOrder || 'desc' };
+        }
+        return { createdAt: 'desc' };
+      })();
 
       const [enquiries, total] = await Promise.all([
         prisma.enquiry.findMany({
@@ -129,6 +139,7 @@ class EnquiryController {
         }
       };
     } catch (error) {
+      console.error('[ENQUIRIES] getEnquiries error:', error);
       throw new Error('Failed to fetch enquiries');
     }
   }
