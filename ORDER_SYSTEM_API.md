@@ -842,3 +842,38 @@ All endpoints return consistent error responses:
      "reason": "Customer requested refund"
    }
    ```
+
+### Admin Cart Management
+
+1. **View all carts:**
+   ```bash
+   GET /api/v1/cart/admin/all?search=john&page=1&limit=20
+   ```
+
+2. **View specific user's cart:**
+   ```bash
+   GET /api/v1/cart/admin/user/user-id
+   ```
+
+3. **Update cart item for any user:**
+   ```bash
+   PUT /api/v1/cart/admin/user/user-id/product/1
+   {
+     "quantity": 5
+   }
+   ```
+
+4. **Remove item from user's cart:**
+   ```bash
+   DELETE /api/v1/cart/admin/user/user-id/product/1
+   ```
+
+5. **Clear user's cart:**
+   ```bash
+   DELETE /api/v1/cart/admin/user/user-id/clear
+   ```
+
+6. **Get cart statistics:**
+   ```bash
+   GET /api/v1/cart/admin/stats
+   ```

@@ -69,6 +69,8 @@ jspm_packages/
 
 # dotenv environment variables file
 .env.test
+*.md
+*.txt
 
 # parcel-bundler cache
 .cache
