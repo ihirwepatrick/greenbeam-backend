@@ -173,6 +173,137 @@ class Cart {
       throw error;
     }
   }
+
+  // Admin: Get all carts with pagination and search
+  static async getAllCarts(limit = 10, offset = 0, search = '') {
+    try {
+      const whereClause = search ? {
+        OR: [
+          {
+            user: {
+              name: {
+                contains: search,
+                mode: 'insensitive'
+              }
+            }
+          },
+          {
+            user: {
+              email: {
+                contains: search,
+                mode: 'insensitive'
+              }
+            }
+          },
+          {
+            product: {
+              name: {
+                contains: search,
+                mode: 'insensitive'
+              }
+            }
+          }
+        ]
+      } : {};
+
+      const [carts, total] = await Promise.all([
+        prisma.cart.findMany({
+          where: whereClause,
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true
+              }
+            },
+            product: {
+              select: {
+                id: true,
+                name: true,
+                price: true,
+                image: true,
+                category: true
+              }
+            }
+          },
+          orderBy: {
+            createdAt: 'desc'
+          },
+          take: limit,
+          skip: offset
+        }),
+        prisma.cart.count({
+          where: whereClause
+        })
+      ]);
+
+      return {
+        carts,
+        total
+      };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  // Admin: Get cart statistics
+  static async getCartStats() {
+    try {
+      const [
+        totalCarts,
+        totalItems,
+        totalValue,
+        activeCarts
+      ] = await Promise.all([
+        // Total number of cart items
+        prisma.cart.count(),
+        // Total quantity of all items
+        prisma.cart.aggregate({
+          _sum: {
+            quantity: true
+          }
+        }),
+        // Total value of all cart items
+        prisma.cart.findMany({
+          include: {
+            product: {
+              select: {
+                price: true
+              }
+            }
+          }
+        }),
+        // Number of users with active carts
+        prisma.cart.groupBy({
+          by: ['userId'],
+          _count: {
+            userId: true
+          }
+        })
+      ]);
+
+      // Calculate total value
+      const calculatedTotalValue = totalValue.reduce((sum, item) => {
+        return sum + (parseFloat(item.product.price) * item.quantity);
+      }, 0);
+
+      // Calculate averages
+      const averageItemsPerCart = totalCarts > 0 ? totalItems._sum.quantity / totalCarts : 0;
+      const averageCartValue = activeCarts.length > 0 ? calculatedTotalValue / activeCarts.length : 0;
+
+      return {
+        totalCarts,
+        totalItems: totalItems._sum.quantity || 0,
+        totalValue: calculatedTotalValue,
+        averageItemsPerCart,
+        averageCartValue,
+        activeCarts: activeCarts.length
+      };
+    } catch (error) {
+      throw error;
+    }
+  }
 }
 
 module.exports = Cart;

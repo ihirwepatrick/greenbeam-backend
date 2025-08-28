@@ -188,6 +188,188 @@ Check if a specific product is in the user's cart.
 
 ---
 
+## Admin Cart Management
+
+### Get All Carts (Admin)
+**GET** `/cart/admin/all`
+
+Get all cart items in the system (admin only).
+
+**Query Parameters:**
+- `page` (optional): Page number (default: 1)
+- `limit` (optional): Items per page (default: 10)
+- `search` (optional): Search by user name, email, or product name
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "carts": [
+      {
+        "id": "cart-item-id",
+        "userId": "user-id",
+        "productId": 1,
+        "quantity": 2,
+        "user": {
+          "id": "user-id",
+          "name": "John Doe",
+          "email": "john@example.com"
+        },
+        "product": {
+          "id": 1,
+          "name": "Product Name",
+          "price": "99.99",
+          "image": "image-url",
+          "category": "Category"
+        },
+        "itemTotal": 199.98,
+        "createdAt": "2024-01-01T00:00:00Z",
+        "updatedAt": "2024-01-01T00:00:00Z"
+      }
+    ],
+    "pagination": {
+      "page": 1,
+      "limit": 10,
+      "total": 50,
+      "totalPages": 5
+    }
+  }
+}
+```
+
+### Get Cart by User ID (Admin)
+**GET** `/cart/admin/user/:userId`
+
+Get the complete cart for a specific user (admin only).
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "userId": "user-id",
+    "user": {
+      "id": "user-id",
+      "name": "John Doe",
+      "email": "john@example.com"
+    },
+    "items": [
+      {
+        "id": "cart-item-id",
+        "productId": 1,
+        "quantity": 2,
+        "product": {
+          "id": 1,
+          "name": "Product Name",
+          "price": "99.99",
+          "image": "image-url",
+          "category": "Category",
+          "description": "Product description"
+        },
+        "itemTotal": 199.98,
+        "createdAt": "2024-01-01T00:00:00Z",
+        "updatedAt": "2024-01-01T00:00:00Z"
+      }
+    ],
+    "total": 199.98,
+    "itemCount": 1
+  }
+}
+```
+
+### Update Cart Item for Any User (Admin)
+**PUT** `/cart/admin/user/:userId/product/:productId`
+
+Update the quantity of a cart item for any user (admin only).
+
+**Request Body:**
+```json
+{
+  "quantity": 3
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "id": "cart-item-id",
+    "userId": "user-id",
+    "productId": 1,
+    "quantity": 3,
+    "product": {
+      "id": 1,
+      "name": "Product Name",
+      "price": "99.99",
+      "image": "image-url",
+      "category": "Category"
+    },
+    "itemTotal": 299.97,
+    "createdAt": "2024-01-01T00:00:00Z",
+    "updatedAt": "2024-01-01T00:00:00Z"
+  },
+  "message": "Cart item updated successfully"
+}
+```
+
+### Remove Item from Any User's Cart (Admin)
+**DELETE** `/cart/admin/user/:userId/product/:productId`
+
+Remove a specific item from any user's cart (admin only).
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "success": true,
+    "message": "Item removed from cart"
+  },
+  "message": "Item removed from cart successfully"
+}
+```
+
+### Clear Any User's Cart (Admin)
+**DELETE** `/cart/admin/user/:userId/clear`
+
+Clear all items from any user's cart (admin only).
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "success": true,
+    "message": "Cart cleared successfully"
+  },
+  "message": "Cart cleared successfully"
+}
+```
+
+### Get Cart Statistics (Admin)
+**GET** `/cart/admin/stats`
+
+Get comprehensive cart statistics (admin only).
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "totalCarts": 150,
+    "totalItems": 450,
+    "totalValue": "44955.00",
+    "averageItemsPerCart": 3.0,
+    "averageCartValue": "299.70",
+    "activeCarts": 50
+  }
+}
+```
+
+---
+
 ## Order Management
 
 ### Create Order from Cart
