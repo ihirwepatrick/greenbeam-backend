@@ -27,6 +27,7 @@ const createProductSchema = Joi.object({
   name: Joi.string().min(2).max(255).required(),
   category: Joi.string().min(2).max(100).required(),
   description: Joi.string().max(2000).optional(),
+  price: Joi.number().positive().precision(2).required(),
   features: Joi.alternatives().try(
     Joi.array().items(Joi.string()),
     Joi.string().custom((value, helpers) => {
@@ -62,6 +63,7 @@ const updateProductSchema = Joi.object({
   name: Joi.string().min(2).max(255).optional(),
   category: Joi.string().min(2).max(100).optional(),
   description: Joi.string().max(2000).optional(),
+  price: Joi.number().positive().precision(2).optional(),
   features: Joi.alternatives().try(
     Joi.array().items(Joi.string()),
     Joi.string().custom((value, helpers) => {
@@ -140,6 +142,68 @@ const notificationQuerySchema = paginationSchema.keys({
   type: Joi.string().valid('ENQUIRY', 'SYSTEM', 'ALERT').optional()
 });
 
+// Cart validation schemas
+const addToCartSchema = Joi.object({
+  productId: Joi.number().integer().positive().required(),
+  quantity: Joi.number().integer().min(1).max(100).default(1)
+});
+
+const updateCartItemSchema = Joi.object({
+  quantity: Joi.number().integer().min(1).max(100).required()
+});
+
+// Order validation schemas
+const createOrderSchema = Joi.object({
+  items: Joi.array().items(
+    Joi.object({
+      productId: Joi.number().integer().positive().required(),
+      quantity: Joi.number().integer().min(1).required()
+    })
+  ).min(1).required(),
+  shippingAddress: Joi.object({
+    firstName: Joi.string().min(2).max(100).required(),
+    lastName: Joi.string().min(2).max(100).required(),
+    email: Joi.string().email().required(),
+    phone: Joi.string().pattern(/^\+?[\d\s\-\(\)]+$/).required(),
+    address: Joi.string().min(10).max(500).required(),
+    city: Joi.string().min(2).max(100).required(),
+    state: Joi.string().min(2).max(100).required(),
+    zipCode: Joi.string().min(3).max(20).required(),
+    country: Joi.string().min(2).max(100).required()
+  }).required(),
+  billingAddress: Joi.object({
+    firstName: Joi.string().min(2).max(100).required(),
+    lastName: Joi.string().min(2).max(100).required(),
+    email: Joi.string().email().required(),
+    phone: Joi.string().pattern(/^\+?[\d\s\-\(\)]+$/).required(),
+    address: Joi.string().min(10).max(500).required(),
+    city: Joi.string().min(2).max(100).required(),
+    state: Joi.string().min(2).max(100).required(),
+    zipCode: Joi.string().min(3).max(20).required(),
+    country: Joi.string().min(2).max(100).required()
+  }).optional(),
+  paymentMethod: Joi.string().valid('stripe', 'paypal', 'bank_transfer').required(),
+  notes: Joi.string().max(1000).optional()
+});
+
+const updateOrderStatusSchema = Joi.object({
+  status: Joi.string().valid('PENDING', 'CONFIRMED', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED', 'REFUNDED').required()
+});
+
+// Payment validation schemas
+const createPaymentSchema = Joi.object({
+  orderId: Joi.string().required(),
+  amount: Joi.number().positive().precision(2).required(),
+  currency: Joi.string().length(3).default('USD'),
+  paymentMethod: Joi.string().valid('stripe', 'paypal', 'bank_transfer').required(),
+  metadata: Joi.object().optional()
+});
+
+const orderQuerySchema = paginationSchema.keys({
+  status: Joi.string().valid('PENDING', 'CONFIRMED', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED', 'REFUNDED').optional(),
+  paymentStatus: Joi.string().valid('PENDING', 'PROCESSING', 'COMPLETED', 'FAILED', 'CANCELLED', 'REFUNDED').optional()
+});
+
 // Validation middleware
 const validate = (schema) => {
   return (req, res, next) => {
@@ -199,6 +263,12 @@ module.exports = {
   enquiryQuerySchema,
   productQuerySchema,
   notificationQuerySchema,
+  addToCartSchema,
+  updateCartItemSchema,
+  createOrderSchema,
+  updateOrderStatusSchema,
+  createPaymentSchema,
+  orderQuerySchema,
   validate,
   validateQuery
 }; 

@@ -13,6 +13,10 @@ module.exports.Notification = prisma.notification;
 module.exports.EmailLog = prisma.emailLog;
 module.exports.User = prisma.user;
 module.exports.Settings = prisma.settings;
+module.exports.Cart = prisma.cart;
+module.exports.Order = prisma.order;
+module.exports.OrderItem = prisma.orderItem;
+module.exports.Payment = prisma.payment;
 // Export the Prisma client for raw queries
 module.exports.$queryRaw = prisma.$queryRaw;
 module.exports.$executeRaw = prisma.$executeRaw;
@@ -25,6 +29,9 @@ module.exports.ResponseModel = require('./ResponseModel');
 module.exports.DTOModel = require('./DTOModel');
 module.exports.ServiceModel = require('./ServiceModel');
 module.exports.ValidationModel = require('./ValidationModel');
+module.exports.CartModel = require('./Cart');
+module.exports.OrderModel = require('./Order');
+module.exports.PaymentModel = require('./Payment');
 
 // Export individual DTOs for convenience
 const { 
