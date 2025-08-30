@@ -3,7 +3,8 @@
  * Business logic layer that handles complex operations and data processing
  */
 
-const prisma = require('./index');
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
 const { EnquiryDTO, ProductDTO, UserDTO, NotificationDTO, EmailLogDTO } = require('./DTOModel');
 const ResponseModel = require('./ResponseModel');
 

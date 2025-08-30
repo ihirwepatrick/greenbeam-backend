@@ -1,4 +1,5 @@
-const prisma = require('./index');
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
 
 class EnquiryResponse {
   // Create new enquiry response
