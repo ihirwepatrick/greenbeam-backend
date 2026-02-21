@@ -5,7 +5,7 @@ class Payment {
   // Create payment record
   static async create(paymentData) {
     try {
-      const { orderId, amount, currency = 'USD', paymentMethod, gateway = 'stripe', metadata = {} } = paymentData;
+      const { orderId, amount, currency = 'RWF', paymentMethod, gateway = 'stripe', metadata = {} } = paymentData;
 
       // Verify order exists
       const order = await prisma.order.findUnique({

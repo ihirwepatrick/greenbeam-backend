@@ -6,7 +6,7 @@ This guide will help you set up and run the Greenbeam e-commerce API.
 
 - Node.js (v16 or higher)
 - PostgreSQL database
-- SendGrid account (for email functionality)
+- Resend account (for email functionality; see [Resend](https://resend.com))
 
 ## Quick Setup
 
@@ -52,10 +52,11 @@ RATE_LIMIT_MAX_REQUESTS=100
 JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
 JWT_EXPIRES_IN=24h
 
-# SendGrid Configuration
-SENDGRID_API_KEY=SG.your-sendgrid-api-key-here
-SENDGRID_FROM_EMAIL=noreply@greenbeam.com
-SENDGRID_FROM_NAME=Greenbeam Team
+# Resend (email) Configuration
+RESEND_API_KEY=re_your-resend-api-key-here
+RESEND_FROM_EMAIL=noreply@yourdomain.com
+RESEND_FROM_NAME=Greenbeam Team
+RESEND_REPLY_TO=
 
 # Email Configuration
 EMAIL_ENABLED=true
@@ -104,19 +105,17 @@ kill -9 <PID>
 PORT=3001
 ```
 
-### SendGrid API Key Issues
+### Resend (email) configuration
 
-If you see `API key does not start with "SG."`:
-
-1. **Get a SendGrid API Key:**
-   - Sign up at [SendGrid](https://sendgrid.com/)
-   - Go to Settings → API Keys
-   - Create a new API key
-   - Copy the key (it should start with "SG.")
+1. **Get a Resend API key and verify your domain:**
+   - Sign up at [Resend](https://resend.com) and create an API key in the [API Keys](https://resend.com/api-keys) section.
+   - Add and verify your sending domain in the Resend dashboard (the "from" address must use a verified domain). Resend also offers a sandbox domain for testing.
 
 2. **Update your .env file:**
    ```env
-   SENDGRID_API_KEY=SG.your-actual-api-key-here
+   RESEND_API_KEY=re_your-actual-api-key-here
+   RESEND_FROM_EMAIL=noreply@yourdomain.com
+   RESEND_FROM_NAME=Greenbeam Team
    ```
 
 3. **Disable email functionality (for development):**

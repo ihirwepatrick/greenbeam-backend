@@ -4,34 +4,35 @@ class ProductController {
   // Get all products with filters and pagination
   static async getProducts(filters) {
     try {
-      const { page, limit, search, category, status, sortBy, sortOrder } = filters;
-      const skip = (page - 1) * limit;
+      const { page = 1, limit = 10, search, category, status, sortBy, sortOrder = 'desc' } = filters;
+      const pageNum = parseInt(page, 10) || 1;
+      const limitNum = parseInt(limit, 10) || 10;
+      const skip = (pageNum - 1) * limitNum;
 
       // Build where clause
       const where = {};
       if (category) where.category = category;
       if (status) where.status = status;
-      if (search) {
+      if (search && search.trim()) {
         where.OR = [
-          { name: { contains: search, mode: 'insensitive' } },
-          { description: { contains: search, mode: 'insensitive' } }
+          { name: { contains: search.trim(), mode: 'insensitive' } },
+          { description: { contains: search.trim(), mode: 'insensitive' } }
         ];
       }
 
-      // Build order by clause
+      // Whitelist sortBy to valid Product fields to avoid Prisma errors
+      const allowedSortFields = ['id', 'name', 'category', 'price', 'rating', 'reviews', 'status', 'createdAt', 'updatedAt'];
       const orderBy = {};
-      if (sortBy) {
-        orderBy[sortBy] = sortOrder;
-      } else {
-        orderBy.createdAt = 'desc';
-      }
+      const safeSortBy = sortBy && allowedSortFields.includes(sortBy) ? sortBy : 'createdAt';
+      const safeSortOrder = sortOrder === 'asc' ? 'asc' : 'desc';
+      orderBy[safeSortBy] = safeSortOrder;
 
       const [products, total] = await Promise.all([
         prisma.product.findMany({
           where,
           orderBy,
           skip,
-          take: limit
+          take: limitNum
         }),
         prisma.product.count({ where })
       ]);
@@ -55,15 +56,16 @@ class ProductController {
             updatedAt: product.updatedAt
           })),
           pagination: {
-            page,
-            limit,
+            page: pageNum,
+            limit: limitNum,
             total,
-            totalPages: Math.ceil(total / limit)
+            totalPages: Math.ceil(total / limitNum) || 1
           }
         }
       };
     } catch (error) {
-      throw new Error('Failed to fetch products');
+      console.error('ProductController.getProducts error:', error);
+      throw new Error(error.message || 'Failed to fetch products');
     }
   }
 

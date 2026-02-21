@@ -20,7 +20,7 @@ class EnquiryController {
         }
       });
 
-      // Send confirmation email (temporarily disabled due to SendGrid issues)
+      // Send confirmation email (via Resend)
       try {
         await sendEnquiryConfirmation(enquiry);
       } catch (emailError) {
@@ -28,7 +28,7 @@ class EnquiryController {
         // Don't fail the enquiry creation if email fails
       }
 
-      // Send admin notification (temporarily disabled due to SendGrid issues)
+      // Send admin notification (via Resend)
       try {
         await sendAdminNotification(enquiry);
       } catch (emailError) {

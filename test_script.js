@@ -217,7 +217,7 @@ async function testPaymentCreation(orderId) {
   const paymentData = {
     orderId: orderId,
     amount: "13399.94",
-    currency: "USD",
+    currency: "RWF",
     paymentMethod: "stripe",
     metadata: {
       stripe_payment_method: "pm_1234567890abcdef",

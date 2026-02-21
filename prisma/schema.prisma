@@ -198,7 +198,7 @@ model Payment {
   id            String        @id @default(cuid())
   orderId       String        @map("order_id")
   amount        Decimal       @map("amount") @db.Decimal(10, 2)
-  currency      String        @default("USD")
+  currency      String        @default("RWF")
   status        PaymentStatus @default(PENDING)
   paymentMethod String        @map("payment_method")
   transactionId String?       @map("transaction_id")

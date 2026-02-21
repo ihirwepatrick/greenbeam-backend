@@ -249,7 +249,7 @@ class PaymentController {
       // 2. Handle the payment confirmation
       // 3. Update the payment record
 
-      const { orderId, amount, currency = 'USD', paymentMethod } = paymentData;
+      const { orderId, amount, currency = 'RWF', paymentMethod } = paymentData;
 
       // Create payment record
       const payment = await Payment.create({

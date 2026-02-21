@@ -727,10 +727,11 @@ SUPABASE_BUCKET_NAME=greenbeam
 JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
 JWT_EXPIRES_IN=24h
 
-# SendGrid Configuration
-SENDGRID_API_KEY=your_sendgrid_api_key
-SENDGRID_FROM_EMAIL=your_email@domain.com
-SENDGRID_FROM_NAME=Greenbeam Team
+# Resend (email) Configuration
+RESEND_API_KEY=re_your_resend_api_key
+RESEND_FROM_EMAIL=noreply@yourdomain.com
+RESEND_FROM_NAME=Greenbeam Team
+RESEND_REPLY_TO=
 
 # Email Configuration
 EMAIL_ENABLED=true

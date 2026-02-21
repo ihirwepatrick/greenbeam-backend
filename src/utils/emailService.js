@@ -1,14 +1,13 @@
-const sgMail = require('@sendgrid/mail');
+const { Resend } = require('resend');
 const prisma = require('../models');
 const https = require('https');
 const http = require('http');
 
-// Configure SendGrid
-sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+// Initialize Resend (API key set at send time so env is read when needed)
+const getResend = () => new Resend(process.env.RESEND_API_KEY);
 
 // Email configuration flags
 const EMAIL_ENABLED = process.env.EMAIL_ENABLED !== 'false';
-const SENDGRID_SANDBOX = process.env.SENDGRID_SANDBOX === 'true';
 const EMAIL_MAX_RETRIES = parseInt(process.env.EMAIL_MAX_RETRIES || '3', 10);
 const EMAIL_RETRY_BASE_MS = parseInt(process.env.EMAIL_RETRY_BASE_MS || '500', 10); // exponential backoff base
 const EMAIL_FAIL_SILENTLY = process.env.EMAIL_FAIL_SILENTLY === 'true' || process.env.NODE_ENV !== 'production';
@@ -37,7 +36,7 @@ const fetchUrlAsBase64 = (url) => new Promise((resolve, reject) => {
     res.on('end', () => {
       const buffer = Buffer.concat(chunks);
       const contentType = res.headers['content-type'] || 'image/png';
-      resolve({ base64: buffer.toString('base64'), contentType });
+      resolve({ base64: buffer.toString('base64'), buffer, contentType });
     });
   }).on('error', reject);
 });
@@ -125,38 +124,46 @@ const emailTemplates = {
   }
 };
 
+// Build "from" string for Resend (e.g. "Greenbeam Team <noreply@domain.com>")
+const getFromAddress = () => {
+  const email = process.env.RESEND_FROM_EMAIL;
+  const name = process.env.RESEND_FROM_NAME;
+  if (!email) return null;
+  if (name && name.trim()) return `${name.trim()} <${email}>`;
+  return email;
+};
+
 // Send email function
 const sendEmail = async (emailData) => {
   const { to, subject, body, type, template, data } = emailData;
-  
+
   let emailSubject = subject;
   let emailBody = body;
-  
+
   try {
     if (!EMAIL_ENABLED) {
       throw new Error('Email sending disabled by EMAIL_ENABLED=false');
     }
-    if (!process.env.SENDGRID_API_KEY || !process.env.SENDGRID_FROM_EMAIL) {
-      throw new Error('Email not configured: missing SENDGRID_API_KEY or SENDGRID_FROM_EMAIL');
+    if (!process.env.RESEND_API_KEY || !process.env.RESEND_FROM_EMAIL) {
+      throw new Error('Email not configured: missing RESEND_API_KEY or RESEND_FROM_EMAIL');
     }
-    
+
     // Use template if provided
     if (template && emailTemplates[template]) {
       emailSubject = emailTemplates[template].subject;
       emailBody = emailTemplates[template].html(data);
     }
-    
+
     const attachments = [];
-    // Optionally embed logo inline via CID:logo
+    // Optionally embed logo inline via CID (Resend supports content_id)
     if (INLINE_LOGO_URL) {
       try {
-        const { base64, contentType } = await fetchUrlAsBase64(INLINE_LOGO_URL);
+        const { buffer, contentType } = await fetchUrlAsBase64(INLINE_LOGO_URL);
+        const ext = (contentType || '').split('/')[1] || 'png';
         attachments.push({
-          content: base64,
-          filename: 'logo',
-          type: contentType,
-          disposition: 'inline',
-          contentId: 'logo'
+          filename: `logo.${ext}`,
+          content: buffer,
+          content_id: 'logo'
         });
         // Replace any existing Cloudinary/logo src with cid:logo
         emailBody = emailBody.replace(/src="https?:\/\/[^"']+\/GREENBEAM_15_09_2021_logo[^"']+"/i, 'src="cid:logo"');
@@ -165,34 +172,34 @@ const sendEmail = async (emailData) => {
       }
     }
 
-    const msg = {
-      to,
-      from: {
-        email: process.env.SENDGRID_FROM_EMAIL,
-        name: process.env.SENDGRID_FROM_NAME
-      },
-      replyTo: process.env.SENDGRID_REPLY_TO || process.env.SENDGRID_FROM_EMAIL,
+    const fromAddress = getFromAddress();
+    const payload = {
+      from: fromAddress,
+      to: Array.isArray(to) ? to : [to],
       subject: emailSubject,
       html: emailBody,
       text: htmlToText(emailBody),
-      trackingSettings: {
-        clickTracking: { enable: false, enableText: false },
-        openTracking: { enable: true }
-      },
-      mailSettings: {
-        sandboxMode: { enable: SENDGRID_SANDBOX }
-      },
-      categories: type ? [String(type)] : undefined,
+      reply_to: process.env.RESEND_REPLY_TO || process.env.RESEND_FROM_EMAIL,
       attachments: attachments.length ? attachments : undefined
     };
 
-    // Send email via SendGrid with retry for transient DNS/network errors
-    let response;
+    // Send email via Resend with retry for transient DNS/network errors
+    let result;
     let attempt = 0;
     let lastError;
+    const resend = getResend();
+
     while (attempt <= EMAIL_MAX_RETRIES) {
       try {
-        response = await sgMail.send(msg);
+        const response = await resend.emails.send(payload);
+        // Resend returns { data: { id } } on success or { error: { message, ... } } on API error
+        if (response.error) {
+          const err = new Error(response.error.message || 'Resend API error');
+          err.code = response.error.code;
+          err.response = response;
+          throw err;
+        }
+        result = response;
         lastError = undefined;
         break;
       } catch (sendError) {
@@ -204,11 +211,10 @@ const sendEmail = async (emailData) => {
           attempt += 1;
           continue;
         }
-        // Non-transient or retries exhausted
         throw sendError;
       }
     }
-    
+
     // Log email to database
     await prisma.emailLog.create({
       data: {
@@ -220,22 +226,23 @@ const sendEmail = async (emailData) => {
         sentAt: new Date()
       }
     });
-    
+
     return {
       success: true,
-      messageId: response[0]?.headers['x-message-id'] || 'unknown',
+      messageId: result?.data?.id || 'unknown',
       sentAt: new Date()
     };
-    
   } catch (error) {
     // Sanitize logs to avoid leaking API keys or headers
+    const responseBody = error.response?.body || error.response;
+    const responseErrors = responseBody?.errors || (responseBody && Array.isArray(responseBody) ? responseBody : undefined);
     const safeLog = {
       message: error.message,
       code: error.code || error.cause?.code,
-      responseStatus: error.response?.status,
-      responseErrors: error.response?.body?.errors,
+      responseStatus: error.response?.statusCode || error.response?.status,
+      responseErrors: responseErrors || (responseBody?.message ? [{ message: responseBody.message }] : undefined),
       hint: (error.code === 'ENOTFOUND' || error.cause?.code === 'ENOTFOUND' || error.code === 'EAI_AGAIN' || error.cause?.code === 'EAI_AGAIN')
-        ? 'DNS lookup failed or timed out for SendGrid host. Check internet connectivity, DNS, or proxy.'
+        ? 'DNS lookup failed or timed out for Resend host. Check internet connectivity, DNS, or proxy.'
         : undefined
     };
     console.error('Email sending failed:', safeLog);
@@ -280,7 +287,7 @@ const sendEnquiryConfirmation = async (enquiry) => {
       enquiryId: enquiry.id
     }
   };
-  
+
   return await sendEmail(emailData);
 };
 
@@ -297,7 +304,7 @@ const sendEnquiryResponse = async (enquiry, responseMessage) => {
       enquiryId: enquiry.id
     }
   };
-  
+
   return await sendEmail(emailData);
 };
 
@@ -308,7 +315,7 @@ const sendAdminNotification = async (enquiry) => {
     console.warn('Admin email not configured, skipping admin notification');
     return null;
   }
-  
+
   const emailData = {
     to: adminEmail,
     type: 'admin_notification',
@@ -322,7 +329,7 @@ const sendAdminNotification = async (enquiry) => {
       priority: enquiry.priority
     }
   };
-  
+
   return await sendEmail(emailData);
 };
 
@@ -330,11 +337,11 @@ const sendAdminNotification = async (enquiry) => {
 const getEmailLogs = async (filters = {}) => {
   const { page = 1, limit = 20, status, type } = filters;
   const skip = (page - 1) * limit;
-  
+
   const where = {};
   if (status) where.status = status;
   if (type) where.type = type;
-  
+
   const [logs, total] = await Promise.all([
     prisma.emailLog.findMany({
       where,
@@ -344,7 +351,7 @@ const getEmailLogs = async (filters = {}) => {
     }),
     prisma.emailLog.count({ where })
   ]);
-  
+
   return {
     logs,
     pagination: {
@@ -363,4 +370,4 @@ module.exports = {
   sendAdminNotification,
   getEmailLogs,
   emailTemplates
-}; 
+};

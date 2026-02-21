@@ -194,7 +194,7 @@ const updateOrderStatusSchema = Joi.object({
 const createPaymentSchema = Joi.object({
   orderId: Joi.string().required(),
   amount: Joi.number().positive().precision(2).required(),
-  currency: Joi.string().length(3).default('USD'),
+  currency: Joi.string().length(3).default('RWF'),
   paymentMethod: Joi.string().valid('stripe', 'paypal', 'bank_transfer').required(),
   metadata: Joi.object().optional()
 });

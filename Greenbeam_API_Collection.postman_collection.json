@@ -470,7 +470,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"orderId\": \"{{order_id}}\",\n  \"amount\": \"13399.94\",\n  \"currency\": \"USD\",\n  \"paymentMethod\": \"stripe\",\n  \"metadata\": {\n    \"stripe_payment_method\": \"pm_1234567890abcdef\",\n    \"customer_id\": \"cus_1234567890\"\n  }\n}"
+              "raw": "{\n  \"orderId\": \"{{order_id}}\",\n  \"amount\": \"13399.94\",\n  \"currency\": \"RWF\",\n  \"paymentMethod\": \"stripe\",\n  \"metadata\": {\n    \"stripe_payment_method\": \"pm_1234567890abcdef\",\n    \"customer_id\": \"cus_1234567890\"\n  }\n}"
             },
             "url": {
               "raw": "{{base_url}}/payments/create",
@@ -511,7 +511,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"orderId\": \"{{order_id}}\",\n  \"amount\": \"13399.94\",\n  \"currency\": \"USD\",\n  \"paymentMethod\": \"pm_1234567890abcdef\"\n}"
+              "raw": "{\n  \"orderId\": \"{{order_id}}\",\n  \"amount\": \"13399.94\",\n  \"currency\": \"RWF\",\n  \"paymentMethod\": \"pm_1234567890abcdef\"\n}"
             },
             "url": {
               "raw": "{{base_url}}/payments/stripe/process",
