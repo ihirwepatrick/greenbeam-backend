@@ -53,6 +53,13 @@ npm install
 pm2 restart greenbeam-api
 ```
 
+### 413 on product upload (Nginx / reverse proxy)
+If the admin portal gets **413 Request Entity Too Large** (and CORS errors) when creating products with images, the reverse proxy is rejecting the body before it reaches Node. **Nginx:** in your `server` or `location` block add:
+```nginx
+client_max_body_size 50M;
+```
+Then reload nginx: `sudo nginx -t && sudo systemctl reload nginx`. The app already allows large bodies (default 50mb via `BODY_LIMIT`); the proxy must allow them too.
+
 ## Authentication
 
 Most endpoints require authentication. Use the JWT token from login/register responses in the Authorization header:

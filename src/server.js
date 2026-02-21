@@ -106,8 +106,10 @@ async function checkSupabaseBucket() {
 
 checkSupabaseBucket();
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// Increase payload limits for product uploads (images). If you still get 413, set client_max_body_size in nginx (e.g. 50m).
+const BODY_LIMIT = process.env.BODY_LIMIT || '50mb';
+app.use(express.json({ limit: BODY_LIMIT }));
+app.use(express.urlencoded({ extended: true, limit: BODY_LIMIT }));
 app.use(compression());
 
 // Serve static files from public directory
