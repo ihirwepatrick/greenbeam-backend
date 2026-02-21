@@ -1,6 +1,5 @@
 require('dotenv').config();
 const express = require('express');
-const cors = require('cors');
 const helmet = require('helmet');
 const compression = require('compression');
 const path = require('path');
@@ -27,13 +26,50 @@ const prisma = require('./models');
 
 const app = express();
 
+// Allowed origins (must be first so preflight always gets CORS headers)
+const ALLOWED_ORIGINS = [
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
+  'http://localhost:3001',
+  'http://127.0.0.1:3001',
+  'http://192.168.56.1:3001',
+  'http://localhost:3000',
+  'http://127.0.0.1:3000',
+  'https://www.greenbeam.online',
+  'https://greenbeam-frontend.vercel.app',
+  'https://greenbeam.online',
+  'https://adminportalentry.greenbeam.online'
+];
+const CORS_METHODS = 'GET, POST, PUT, DELETE, OPTIONS, PATCH';
+const CORS_HEADERS = 'Content-Type, Authorization, Origin, X-Requested-With, Accept';
+
+// 1) CORS first: handle preflight (OPTIONS) immediately with correct headers
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (origin && ALLOWED_ORIGINS.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  }
+  res.setHeader('Access-Control-Allow-Methods', CORS_METHODS);
+  res.setHeader('Access-Control-Allow-Headers', CORS_HEADERS);
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Max-Age', '86400');
+  if (req.method === 'OPTIONS') {
+    return res.status(204).end();
+  }
+  next();
+});
+
+// 2) Then helmet and rest of app
+app.use(helmet({
+  contentSecurityPolicy: false
+}));
+
 // Initialize Supabase bucket check
 async function checkSupabaseBucket() {
   try {
     const bucketName = process.env.SUPABASE_BUCKET_NAME || 'greenbeam';
     console.log(`Checking Supabase bucket: '${bucketName}'`);
     
-    // Check if bucket exists
     const { data: buckets, error } = await supabase.storage.listBuckets();
     
     if (error) {
@@ -53,45 +89,7 @@ async function checkSupabaseBucket() {
   }
 }
 
-// Check Supabase bucket on startup
 checkSupabaseBucket();
-
-// Basic middleware
-app.use(helmet({
-    contentSecurityPolicy: false // For development only
-}));
-
-// CORS: hardcoded allowed origins; preflight must get same headers
-const allowedOrigins = [
-  'http://localhost:5173',
-  'http://127.0.0.1:5173',
-  'http://localhost:3001',
-  'http://127.0.0.1:3001',
-  'http://192.168.56.1:3001',
-  'http://localhost:3000',
-  'http://127.0.0.1:3000',
-  'https://www.greenbeam.online',
-  'https://greenbeam-frontend.vercel.app',
-  'https://greenbeam.online',
-  'https://adminportalentry.greenbeam.online'
-];
-
-const corsOptions = {
-  origin: (origin, callback) => {
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin)) return callback(null, true);
-    callback(new Error(`CORS not allowed for origin: ${origin}`));
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Origin', 'X-Requested-With', 'Accept', 'Access-Control-Allow-Headers'],
-  optionsSuccessStatus: 204
-};
-
-app.use(cors(corsOptions));
-
-// Ensure preflight (OPTIONS) gets same CORS config
-app.options('*', cors(corsOptions));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
