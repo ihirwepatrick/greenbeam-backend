@@ -45,6 +45,14 @@ npx prisma db push
 npm run dev
 ```
 
+### Production deploy (e.g. PM2)
+After pulling new code on the server, always install dependencies and restart:
+```bash
+cd /var/www/greenbeam-backend   # or your app path
+npm install
+pm2 restart greenbeam-api
+```
+
 ## Authentication
 
 Most endpoints require authentication. Use the JWT token from login/register responses in the Authorization header:

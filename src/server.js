@@ -42,6 +42,9 @@ const ALLOWED_ORIGINS = [
   'https://adminportalentry.greenbeam.online'
 ];
 
+// Headers that browser may send (including uploads / XMLHttpRequest)
+const CORS_ALLOW_HEADERS = 'Content-Type, Authorization, Origin, X-Requested-With, Accept';
+
 // 1) Handle preflight (OPTIONS) immediately so response always has CORS headers (works even behind proxies)
 app.use((req, res, next) => {
   if (req.method !== 'OPTIONS') return next();
@@ -50,7 +53,7 @@ app.use((req, res, next) => {
     res.setHeader('Access-Control-Allow-Origin', origin);
   }
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Allow-Headers', CORS_ALLOW_HEADERS);
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Max-Age', '86400');
   res.status(204).end();
@@ -66,7 +69,7 @@ const corsOptions = {
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  allowedHeaders: CORS_ALLOW_HEADERS.split(', '),
   optionsSuccessStatus: 204
 };
 app.use(cors(corsOptions));
