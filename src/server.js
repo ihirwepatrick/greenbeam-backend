@@ -61,41 +61,36 @@ app.use(helmet({
     contentSecurityPolicy: false // For development only
 }));
 
-// CORS config: same origin list and options for both normal and preflight (OPTIONS) requests
+// CORS: hardcoded allowed origins; preflight must get same headers
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
+  'http://localhost:3001',
+  'http://127.0.0.1:3001',
+  'http://192.168.56.1:3001',
+  'http://localhost:3000',
+  'http://127.0.0.1:3000',
+  'https://www.greenbeam.online',
+  'https://greenbeam-frontend.vercel.app',
+  'https://greenbeam.online',
+  'https://adminportalentry.greenbeam.online'
+];
+
 const corsOptions = {
-  origin: [
-    'http://localhost:5173',
-    'http://127.0.0.1:5173',
-    'http://localhost:3001',
-    'http://127.0.0.1:3001',
-    'http://192.168.56.1:3001',
-    'http://localhost:3000',
-    'http://127.0.0.1:3000',
-    'https://www.greenbeam.online',
-    'https://greenbeam-frontend.vercel.app',
-    'https://greenbeam.online',
-    'https://greenbeam.online/api/v1/enquiries',
-    'https://greenbeam.online/api/v1/products',
-    'https://greenbeam.online/api/v1/auth',
-    'https://greenbeam.online/api/v1/dashboard',
-    'https://greenbeam.online/api/v1/settings',
-    'https://greenbeam.online/api/v1/upload',
-    'https://adminportalentry.greenbeam.online',
-    'https://adminportalentry.greenbeam.online/api/v1/enquiries',
-    'https://adminportalentry.greenbeam.online/api/v1/products',
-    'https://adminportalentry.greenbeam.online/api/v1/auth',
-    'https://adminportalentry.greenbeam.online/api/v1/dashboard',
-    'https://adminportalentry.greenbeam.online/api/v1/settings',
-    'https://adminportalentry.greenbeam.online/api/v1/upload'
-  ],
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+    callback(new Error(`CORS not allowed for origin: ${origin}`));
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Origin', 'X-Requested-With', 'Accept', 'Access-Control-Allow-Headers']
+  allowedHeaders: ['Content-Type', 'Authorization', 'Origin', 'X-Requested-With', 'Accept', 'Access-Control-Allow-Headers'],
+  optionsSuccessStatus: 204
 };
 
 app.use(cors(corsOptions));
 
-// Preflight must use the same CORS config so browser gets Access-Control-Allow-Origin
+// Ensure preflight (OPTIONS) gets same CORS config
 app.options('*', cors(corsOptions));
 
 app.use(express.json());
