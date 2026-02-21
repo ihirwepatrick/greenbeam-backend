@@ -79,7 +79,14 @@ const corsOptions = {
     'https://greenbeam.online/api/v1/auth',
     'https://greenbeam.online/api/v1/dashboard',
     'https://greenbeam.online/api/v1/settings',
-    'https://greenbeam.online/api/v1/upload'
+    'https://greenbeam.online/api/v1/upload',
+    'https://adminportalentry.greenbeam.online',
+    'https://adminportalentry.greenbeam.online/api/v1/enquiries',
+    'https://adminportalentry.greenbeam.online/api/v1/products',
+    'https://adminportalentry.greenbeam.online/api/v1/auth',
+    'https://adminportalentry.greenbeam.online/api/v1/dashboard',
+    'https://adminportalentry.greenbeam.online/api/v1/settings',
+    'https://adminportalentry.greenbeam.online/api/v1/upload'
   ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
