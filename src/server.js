@@ -42,20 +42,34 @@ const ALLOWED_ORIGINS = [
   'https://adminportalentry.greenbeam.online'
 ];
 
-app.use(cors({
+// 1) Handle preflight (OPTIONS) immediately so response always has CORS headers (works even behind proxies)
+app.use((req, res, next) => {
+  if (req.method !== 'OPTIONS') return next();
+  const origin = req.headers.origin;
+  if (origin && ALLOWED_ORIGINS.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  }
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Max-Age', '86400');
+  res.status(204).end();
+});
+
+// 2) cors package for all other requests (adds CORS headers to GET, POST, etc.)
+const corsOptions = {
   origin: function (origin, callback) {
-    if (!origin) return callback(null, true); // allow non-browser tools
-    if (ALLOWED_ORIGINS.includes(origin)) {
-      return callback(null, true);
-    } else {
-      console.log('Blocked by CORS:', origin);
-      return callback(new Error('Not allowed by CORS'));
-    }
+    if (!origin) return callback(null, true);
+    if (ALLOWED_ORIGINS.includes(origin)) return callback(null, true);
+    console.log('Blocked by CORS:', origin);
+    return callback(new Error('Not allowed by CORS'));
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  optionsSuccessStatus: 204
+};
+app.use(cors(corsOptions));
 
 // Then helmet and rest of app
 app.use(helmet({
@@ -143,7 +157,7 @@ app.use((error, req, res, next) => {
 });
 
 // Server setup with port handling
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 4000;
 
 const startServer = async () => {
     try {
