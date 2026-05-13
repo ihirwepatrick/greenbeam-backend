@@ -563,6 +563,96 @@ class SettingsController {
       throw new Error('Failed to update website settings');
     }
   }
+
+  /**
+   * Merge dotted keys (legacy flattened website updates) with JSON blob keys.
+   */
+  static mergeCategoryDotKeys(categoryData) {
+    if (!categoryData || typeof categoryData !== 'object') return {};
+    const treeFromDots = {};
+    const plainKeys = {};
+
+    for (const [key, value] of Object.entries(categoryData)) {
+      if (key.includes('.')) {
+        const parts = key.split('.');
+        let node = treeFromDots;
+        for (let i = 0; i < parts.length - 1; i++) {
+          const p = parts[i];
+          if (!node[p] || typeof node[p] !== 'object' || Array.isArray(node[p])) {
+            node[p] = {};
+          }
+          node = node[p];
+        }
+        node[parts[parts.length - 1]] = value;
+      } else {
+        plainKeys[key] = value;
+      }
+    }
+
+    const deepMerge = (base, extra) => {
+      const out = base && typeof base === 'object' && !Array.isArray(base) ? { ...base } : {};
+      if (!extra || typeof extra !== 'object') return out;
+      for (const [k, v] of Object.entries(extra)) {
+        if (
+          v &&
+          typeof v === 'object' &&
+          !Array.isArray(v) &&
+          out[k] &&
+          typeof out[k] === 'object' &&
+          !Array.isArray(out[k])
+        ) {
+          out[k] = deepMerge(out[k], v);
+        } else {
+          out[k] = v;
+        }
+      }
+      return out;
+    };
+
+    return deepMerge(plainKeys, treeFromDots);
+  }
+
+  /** Whitelist safe general fields for public storefront (no SMTP etc.) */
+  static sanitizePublicGeneral(generalRaw) {
+    const allowed = new Set([
+      'companyName',
+      'companyEmail',
+      'companyPhone',
+      'companyAddress',
+      'timezone',
+      'currency',
+      'language',
+      'dateFormat',
+      'timeFormat',
+      'siteUrl',
+      'businessHours',
+    ]);
+    const out = {};
+    if (!generalRaw || typeof generalRaw !== 'object') return out;
+    for (const [k, v] of Object.entries(generalRaw)) {
+      if (allowed.has(k)) out[k] = v;
+    }
+    return out;
+  }
+
+  /** Public read model for storefront (no auth). */
+  static async getPublicSiteConfig() {
+    const [websiteRes, generalRes] = await Promise.all([
+      this.getSettingsByCategory('website'),
+      this.getSettingsByCategory('general'),
+    ]);
+
+    const website = this.mergeCategoryDotKeys(websiteRes.data || {});
+    const general = this.sanitizePublicGeneral(generalRes.data || {});
+
+    return {
+      success: true,
+      data: {
+        website,
+        general,
+      },
+    };
+  }
 }
 
 module.exports = SettingsController; 

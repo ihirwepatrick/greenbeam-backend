@@ -21,6 +21,7 @@ const uploadRoutes = require('./routes/upload');
 const cartRoutes = require('./routes/cart');
 const orderRoutes = require('./routes/orders');
 const paymentRoutes = require('./routes/payments');
+const publicRoutes = require('./routes/public');
 
 // Import database
 const prisma = require('./models');
@@ -128,6 +129,7 @@ app.get('/health', (req, res) => {
 });
 
 // API Routes
+app.use('/api/v1/public', publicRoutes);
 app.use('/api/v1/enquiries', enquiryRoutes);
 app.use('/api/v1/products', productRoutes);
 app.use('/api/v1/auth', authRoutes);
