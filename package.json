@@ -4,16 +4,22 @@
   "description": "Greenbeam E-commerce API Backend with Prisma and PostgreSQL",
   "main": "src/server.js",
   "scripts": {
-    "start": "node src/server.js",
-    "dev": "nodemon src/server.js",
-    "build": "prisma generate",
+    "start": "node init && node src/server.js",
+    "dev": "node init && nodemon src/server.js",
+    "build": "node init && prisma generate",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
     "db:studio": "prisma studio",
     "db:seed": "node src/scripts/seed.js"
   },
-  "keywords": ["e-commerce", "green-energy", "api", "prisma", "postgresql"],
+  "keywords": [
+    "e-commerce",
+    "green-energy",
+    "api",
+    "prisma",
+    "postgresql"
+  ],
   "author": "Greenbeam Team",
   "license": "ISC",
   "dependencies": {

@@ -338,6 +338,88 @@ class SettingsController {
               newsletterDescription: 'Get the latest updates on our products and services',
               showSocialLinks: true,
               copyrightText: '© 2024 Greenbeam. All rights reserved.'
+            },
+            valueProps: [
+              { icon: 'zap', title: 'High Efficiency', description: 'Premium quality equipment with maximum energy output' },
+              { icon: 'shield', title: '25-Year Warranty', description: 'Long-term protection for your investment' },
+              { icon: 'truck', title: 'Free Installation', description: 'Professional installation included with every purchase' },
+              { icon: 'leaf', title: 'Eco-Friendly', description: 'Reduce your carbon footprint and save money' }
+            ],
+            homeCategories: {
+              title: 'Shop by Category',
+              subtitle: 'Discover our comprehensive range of sustainable energy solutions'
+            },
+            newsletter: {
+              title: 'Stay Updated',
+              subtitle: 'Get the latest news on green energy solutions and exclusive offers',
+              placeholder: 'Enter your email',
+              buttonLabel: 'Subscribe'
+            },
+            featuredSection: {
+              title: 'Featured Products',
+              viewAllLabel: 'View All Products',
+              emptyTitle: 'No Products Available',
+              emptyBody: 'Check back soon for our sustainable energy solutions!'
+            },
+            footerNav: {
+              productsTitle: 'Products',
+              companyTitle: 'Company',
+              supportTitle: 'Support',
+              productLinks: [
+                { label: 'Solar Panels', href: '/products?category=Solar%20Panels' },
+                { label: 'Wind Turbines', href: '/products?category=Wind%20Energy' },
+                { label: 'Battery Storage', href: '/products?category=Energy%20Storage' },
+                { label: 'Inverters', href: '/products?category=Inverters' }
+              ],
+              companyLinks: [
+                { label: 'About Us', href: '/about' },
+                { label: 'Contact', href: '/contact' },
+                { label: 'Blog', href: '/blog' }
+              ],
+              supportLinks: [
+                { label: 'Help Center', href: '/contact' },
+                { label: 'Shipping Info', href: '/contact' },
+                { label: 'Returns', href: '/contact' }
+              ]
+            },
+            productPage: {
+              specsSectionTitle: 'Product Specifications',
+              technicalDetailsTitle: 'Technical Details',
+              labelCategory: 'Category',
+              labelRating: 'Rating',
+              labelStatus: 'Status',
+              labelAdded: 'Added',
+              installationTitle: 'Installation & Support',
+              installationBullets: [
+                'Professional installation included',
+                '24/7 technical support',
+                'Maintenance services available',
+                'Training and documentation'
+              ],
+              relatedTitle: 'Looking for More Options?',
+              relatedSubtitle: 'Explore our complete range of sustainable energy solutions',
+              relatedButton: 'Browse All Products'
+            },
+            cartPage: {
+              loadingText: 'Loading your cart...',
+              emptyTitle: 'Your cart is empty',
+              emptyBody: 'Start shopping to add items to your cart.',
+              pageTitle: 'Shopping Cart',
+              continueShoppingLabel: 'Continue Shopping',
+              browseProductsLabel: 'Browse Products'
+            },
+            checkoutPage: {
+              pageTitle: 'Checkout',
+              pageSubtitle: 'Complete your purchase',
+              termsLabel: 'I accept the terms and conditions',
+              cartEmptyTitle: 'Your cart is empty',
+              cartEmptyBody: 'Add some items to your cart before checking out.',
+              continueShoppingButton: 'Continue Shopping'
+            },
+            blog: {
+              listIntroTitle: 'Blog',
+              listIntroBody: 'News and updates from Greenbeam.',
+              posts: []
             }
           },
           seo: {
